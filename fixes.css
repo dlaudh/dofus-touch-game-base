@@ -8,6 +8,15 @@ html, body {
   background: #000;
 }
 
+/* The client only recomputes #dofusBody's height on keyboard/visualViewport
+   events, not on window resize — so on desktop the height stays frozen while
+   the width follows. Force it (and its ancestors) to fill the window; the
+   !important overrides the inline fixed height the client sets. */
+html, body, #dofusBody {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* The shortcut bar drawer collapses on desktop widths without this. */
 .ShortcutBar .drawerContent {
   min-width: 100% !important;
