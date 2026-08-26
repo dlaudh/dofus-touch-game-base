@@ -8,11 +8,13 @@ html, body {
   background: #000;
 }
 
-/* The client only recomputes #dofusBody's height on keyboard/visualViewport
-   events, not on window resize — so on desktop the height stays frozen while
-   the width follows. Force it (and its ancestors) to fill the window; the
-   !important overrides the inline fixed height the client sets. */
-html, body, #dofusBody {
+/* The client builds body > #resizableBody > #dofusBody > canvas and only
+   recomputes their height on keyboard/visualViewport events, not on window
+   resize — so on desktop the height stays frozen while the width follows.
+   Force the whole chain to fill the window; !important overrides the inline
+   fixed heights the client sets. #resizableBody must be included (it's the
+   wrapper #dofusBody lives in) or the 100% has nothing to fill against. */
+#resizableBody, #dofusBody {
   width: 100% !important;
   height: 100% !important;
 }
