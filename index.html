@@ -1,0 +1,125 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Clean Dofus Touch game-base bootstrap.
+
+      Served locally by the wrapper (via the `dofus://` Tauri protocol) from
+      <app_data>/game-base/. It fakes the Cordova/Android environment the
+      mobile client expects, pulls Ankama's config.json, then loads the
+      patched client bundle from ./build/script.js.
+
+      PROVISIONAL: the exact client boot contract (whether the client reads
+      window.Config vs fetches config.json itself, extra globals it needs) is
+      tied to the live client version and must be confirmed against the real
+      build/script.js. See game-base/README.md.
+    -->
+    <script>
+      // --- Environment the mobile client expects -----------------------------
+      // Touch no-op so the client's touch bindings attach cleanly.
+      window.ontouchstart = function () {};
+
+      // App/build identity. Provisional values — the real client keys these to
+      // the shipped bundle; adjust once the live build is wired.
+      window.appVersion = "1.0.0";
+      window.buildVersion = "1.0.0";
+      window.appInfo = { version: window.appVersion };
+      window._ = {
+        appVersion: window.appVersion,
+        buildVersion: window.buildVersion,
+        client: "android",
+      };
+
+      // The client feature-detects IndexedDB; stub it out (desktop WebView
+      // storage is handled by the isolated data store instead).
+      window.indexedDB = {};
+      window.IDBDatabase = {};
+      window.IDBTransaction = {};
+      window.IDBCursor = {};
+      window.IDBKeyRange = {};
+
+      // Minimal Cordova shim so the Cordova-built client doesn't throw.
+      window.cordova = {
+        plugins: {
+          isemulator: { assess: function (fct) { fct(false); } },
+          Keyboard: {
+            close: function () {},
+            disableScroll: function () {},
+            show: function () {},
+            hideKeyboardAccessoryBar: function () {},
+          },
+          notification: { local: false },
+          pushNotification: {
+            onDeviceReady: function () {},
+            setUserId: function () {},
+            registerDevice: function () {},
+          },
+        },
+      };
+
+      // macOS WebKit fires requestAnimationFrame too aggressively for the
+      // client's render loop; throttle to ~60fps. Harmless elsewhere.
+      (function () {
+        var raf = function (callback) {
+          raf.queue.push(callback);
+          if (!raf.timeout) {
+            raf.timeout = setTimeout(function () {
+              var q = raf.queue;
+              raf.queue = [];
+              raf.timeout = null;
+              q.forEach(function (fn) { fn(); });
+            }, 16);
+          }
+        };
+        raf.queue = [];
+        raf.timeout = null;
+        window.requestAnimationFrame = raf;
+      })();
+
+      // Ankama's remote config. CORS-open (access-control-allow-origin: *).
+      // Provisional host — mirrors config.dataUrl; overridable later.
+      var CONFIG_URL =
+        "https://dt-proxy-production-login.ankama-games.com/config.json";
+
+      // Loads the patched client bundle, then our runtime fixes, then cb().
+      window.initDofus = function (cb) {
+        var head = document.getElementsByTagName("head")[0];
+        var client = document.createElement("script");
+        client.addEventListener("load", function () {
+          var fixes = document.createElement("script");
+          fixes.src = "fixes.js";
+          head.appendChild(fixes);
+          if (cb) cb();
+        });
+        client.addEventListener("error", function () {
+          document.body.innerHTML =
+            '<pre style="color:#f66;font:14px monospace;padding:16px">' +
+            "[dtd] build/script.js missing.\n\nThe client bundle has not been " +
+            "provisioned yet. Set the client build URL in config.json " +
+            '(client_build_url) so the wrapper can download + patch it.</pre>';
+        });
+        client.src = "build/script.js";
+        head.appendChild(client);
+      };
+
+      // Fetch config first (the client reads window.Config), then boot.
+      fetch(CONFIG_URL)
+        .then(function (r) { return r.json(); })
+        .then(function (cfg) {
+          window.Config = cfg;
+          window.initDofus(function () {});
+        })
+        .catch(function (e) {
+          document.body.innerHTML =
+            '<pre style="color:#f66;font:14px monospace;padding:16px">' +
+            "[dtd] failed to load config.json from " + CONFIG_URL + "\n\n" +
+            String(e) + "</pre>";
+        });
+    </script>
+    <link rel="stylesheet" href="build/styles-native.css" />
+    <link rel="stylesheet" href="fixes.css" />
+  </head>
+  <body></body>
+  <script src="keymaster.js"></script>
+</html>
