@@ -55,7 +55,49 @@
             setUserId: function () {},
             registerDevice: function () {},
           },
+          // The client opens the Ankama OAuth URL through browsertab. Bridge
+          // it to a Tauri auth window (see open_auth_window in Rust).
+          browsertab: {
+            isAvailable: function (cb) {
+              cb(true);
+            },
+            openUrl: function (url) {
+              var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+              if (inv) inv("open_auth_window", { url: url }).catch(function (e) {
+                console.error("[dtd] open_auth_window failed", e);
+              });
+            },
+            close: function () {
+              var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+              if (inv) inv("close_auth_window").catch(function () {});
+            },
+          },
         },
+      };
+
+      // The client registers a deeplink callback via IonicDeeplink to receive
+      // the OAuth redirect (dofustouch://authorized?code=...). We store the
+      // callback and invoke it from Rust once the auth window captures the
+      // redirect (see window.__dtd_onAuthRedirect below).
+      window.IonicDeeplink = {
+        onDeepLink: function (cb) {
+          window.__dtd_deeplinkCb = cb;
+        },
+        route: function () {},
+        routeWithNavController: function () {},
+      };
+
+      // Called by Rust (via eval) when the auth window captures the redirect.
+      // Passes a match object covering the shapes Ionic Deeplink callbacks read.
+      window.__dtd_onAuthRedirect = function (url) {
+        try {
+          console.log("[dtd] auth redirect received:", url);
+          var cb = window.__dtd_deeplinkCb;
+          if (cb) cb({ url: url, $link: { url: url } });
+          else console.warn("[dtd] no deeplink callback registered yet");
+        } catch (e) {
+          console.error("[dtd] deeplink callback error", e);
+        }
       };
 
       // macOS WebKit fires requestAnimationFrame too aggressively for the
