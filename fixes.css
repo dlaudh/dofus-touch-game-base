@@ -1,6 +1,4 @@
-/* Desktop layout fixes for the mobile client. Clean placeholder — real
-   corrections (canvas centering, scrollbars, cursor) added during live
-   testing. No gameplay-affecting styling. */
+/* Desktop layout fixes for the mobile client. No gameplay-affecting styling. */
 html, body {
   margin: 0;
   padding: 0;
@@ -8,4 +6,28 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
+}
+
+/* The shortcut bar drawer collapses on desktop widths without this. */
+.ShortcutBar .drawerContent {
+  min-width: 100% !important;
+}
+
+/* Thin, unobtrusive scrollbars matching the dark UI. */
+::-webkit-scrollbar {
+  width: 10px;
+  background-color: rgba(0, 0, 0, 0);
+}
+::-webkit-scrollbar:hover {
+  background-color: rgba(0, 0, 0, 0.09);
+}
+::-webkit-scrollbar-thumb:vertical {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 100px;
+  background-clip: padding-box;
+  border: 2px solid rgba(0, 0, 0, 0);
+  min-height: 10px;
+}
+::-webkit-scrollbar-thumb:vertical:active {
+  background: rgba(0, 0, 0, 0.61);
 }
