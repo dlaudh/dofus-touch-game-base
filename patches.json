@@ -1,48 +1,20 @@
 {
   "_comment": [
     "Regex patches applied to the downloaded client bundle (build/script.js)",
-    "before it runs, to make the Cordova/Android client work in a desktop",
-    "WebView and to enable manual/desktop login.",
+    "before it runs. Keyed to the minified client build (currently v3.2.13);",
+    "non-matching patterns are skipped with a warning.",
     "",
-    "PROVISIONAL: these patterns are keyed to the minified client build and",
-    "MUST be re-derived/verified against the live client version (currently",
-    "3.2.13). Patterns that no longer match are skipped with a warning. This",
-    "seed list captures the KNOWN transform intents; the exact regexes need",
-    "the real bundle to finalize. See README.md.",
-    "",
-    "Each entry: { file, find (Rust regex), replace, note }. `find` is applied",
-    "with the regex crate; `replace` uses $1.. capture refs."
+    "Kept MINIMAL on purpose: only safe, verified transforms so the stock",
+    "client can boot. Desktop/asset/login patches are added incrementally as",
+    "live testing shows what the client needs. Each entry: { file, find",
+    "(Rust regex), replace, note }."
   ],
   "patches": [
     {
       "file": "build/script.js",
-      "find": "cdvfile://localhost/persistent/data/assets",
-      "replace": "../assets",
-      "note": "Redirect Cordova file-system asset paths to the local/CDN assets."
-    },
-    {
-      "file": "build/script.js",
-      "find": "window\\.Config\\.analytics",
-      "replace": "null",
-      "note": "Disable analytics wiring."
-    },
-    {
-      "file": "build/script.js",
-      "find": "return t\\.m = e, t\\.c = i, t\\.p = \"\", t\\(0\\)",
-      "replace": "window.singletons = t;\nreturn t.m = e, t.c = i, t.p = \"\", t(0)",
-      "note": "Expose the webpack module registry as window.singletons."
-    },
-    {
-      "file": "build/script.js",
-      "find": "(\\w{1,2}\\.exports\\s?=\\s?(\\w{1,2}),\\s?)(\\w{1,2}\\.prototype\\.setLook)",
-      "replace": "$1window.CharacterDisplay = $2, $3",
-      "note": "Expose CharacterDisplay for mods/notifications."
-    },
-    {
-      "file": "build/script.js",
-      "find": "PROVISIONAL_PLAY_BUTTON_TAP_HANDLER",
-      "replace": "PROVISIONAL_INJECT_CUSTOMAUTH_CODE_PROMPT",
-      "note": "LOGIN PATCH (provisional): wrap the play button's web-auth tap handler to also offer a manual Ankama-code entry that calls window.dofus.CustomAuth(null, code). The exact minified pattern for the _playBtn 'tap' handler is version-specific and must be captured from the real 3.2.13 bundle. Reference intent (from community): before _launchWebAuth(), open a confirm popup with a code input and call window.dofus.CustomAuth(null, code). The wrapper also auto-intercepts dofustouch://authorized?code=... in Rust on_navigation, so this patch is a fallback."
+      "find": "return t\\.m=e,t\\.c=i,t\\.p=\"\",t\\(0\\)",
+      "replace": "window.singletons=t;return t.m=e,t.c=i,t.p=\"\",t(0)",
+      "note": "Expose the webpack module registry as window.singletons (verified against v3.2.13). Harmless; enables later hooks."
     }
   ]
 }
