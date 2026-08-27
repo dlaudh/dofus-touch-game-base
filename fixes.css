@@ -15,6 +15,11 @@
   top: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  /* The client positions this popup like a normal centered window via an
+     inline translate3d, which on desktop shoves it downward. Neutralize it so
+     the fullscreen gradient covers from 0,0 and .windowContent (which centers
+     itself at top/left 50% with its own transform) sits in the middle. */
+  transform: none !important;
 }
 
 body,html{
