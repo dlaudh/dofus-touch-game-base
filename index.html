@@ -16,6 +16,23 @@
       build/script.js. See game-base/README.md.
     -->
     <script>
+      // --- CORS proxy scope --------------------------------------------------
+      // tauri-plugin-cors-fetch proxies window.fetch through Rust to bypass
+      // CORS. But it proxies EVERYTHING by default, and Ankama's CDN
+      // (dofustouch.cdn.ankama.com, CloudFront) WAF-blocks non-browser
+      // (Rust) requests with a 403. Only haapi.ankama.com actually needs the
+      // bypass (its APIKEY header trips CORS), and haapi is reachable from a
+      // non-browser client. So restrict the proxy to haapi; everything else
+      // stays native (as it worked before the plugin).
+      (function restrictCors() {
+        if (window.CORSFetch && window.CORSFetch.config) {
+          window.CORSFetch.config({ include: [/haapi\.ankama\.com/i] });
+          console.log("[dtd] CORSFetch restricted to haapi.ankama.com");
+        } else {
+          setTimeout(restrictCors, 30);
+        }
+      })();
+
       // --- Environment the mobile client expects -----------------------------
       // Touch no-op so the client's touch bindings attach cleanly.
       window.ontouchstart = function () {};
