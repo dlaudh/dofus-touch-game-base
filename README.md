@@ -3,39 +3,44 @@
 Clean, from-scratch replacement for Ankama's dead web-client entry point.
 Ankama no longer serves a loadable client URL (the old
 `proxyconnection.touch.dofus.com` is gone), so — like Lindo's `lindo-game-base`
-— the wrapper must bootstrap the client **locally**.
+— the wrapper bootstraps the client **locally**.
 
 ## How it works
 
-1. The wrapper copies these files into `<app_data>/game-base/` on launch
-   (see `src-tauri/src/game_base.rs`) and serves them to the game WebView via
-   the `dofus://` Tauri protocol.
+1. On launch the main process copies these files into `<userData>/game-base/`
+   (`src/main/gameBase.ts`) and serves them over a loopback HTTP server
+   (`src/main/server.ts`). The game `BrowserWindow` loads
+   `http://127.0.0.1:<port>/index.html`.
 2. `index.html` fakes the Cordova/Android environment the mobile client
    expects, fetches Ankama's `config.json`, sets `window.Config`, then loads
    the patched client bundle from `./build/script.js`.
-3. `build/script.js` is **downloaded to `<app_data>/game-base/build/`** from a
-   configured URL and **patched** using `patches.json` before it runs. The
-   download+patch+cache step mirrors what Lindo does to appdata.
+3. `build/script.js` is **downloaded** into `<userData>/game-base/build/` (the
+   raw bundle is cached as `script.raw.js`) and **regex-patched** using
+   `patches.json` before it runs — the download+patch+cache step mirrors what
+   Lindo does. The bundle is re-downloaded only when the client version changes
+   (read from `config.json`'s `assetsUrl`; tracked in `build/version.txt`);
+   otherwise the cache is reused and patches are re-applied each launch.
+4. **Login** — the client's OAuth flow opens in a dedicated Electron auth
+   window; the `dofustouch://authorized?code=...` redirect is captured
+   (`src/main/windows.ts`) and handed back to the client's own deeplink handler
+   (`window.__dtd_onAuthRedirect` in `index.html`).
 
 ## Files
 
-- `index.html` — bootstrap (fake Cordova env, macOS rAF fix, config fetch, loader)
-- `fixes.js` / `fixes.css` — runtime/style fixes applied after the client loads
+- `index.html` — bootstrap (fake Cordova env, macOS rAF note, config fetch, loader)
+- `fixes.js` / `fixes.css` — runtime + style fixes applied after the client loads
+  (mouse→touch, window-shape layout, black-bar/zoom fixes, popup sizing)
 - `patches.json` — regex transforms applied to the downloaded client bundle
+- `shortcuts.js` — desktop keyboard shortcuts + mouse-wheel zoom
+- `mover.js` — A* pathfinder helper (ported from Lindo)
+- `mods.js` + `mods/*.js` — quality-of-life mods ported from Lindo (always on)
 - `keymaster.js` — keyboard-dep stub
 
-## PROVISIONAL — needs the real client bundle
+## Patches are version-fragile
 
-The hard, version-fragile parts cannot be finalized without the live client
-build (**currently v3.2.13**), which sits behind a locked CDN:
-
-- The exact `client_build_url` for `build/script.js` (+ `styles-native.css`).
-- The exact `patches.json` regexes — they key to the minified bundle and must
-  be re-derived per client version. The seed list here captures the KNOWN
-  transform *intents*; patterns that don't match are skipped with a warning.
-- Whether the client reads `window.Config` vs fetches `config.json` itself,
-  and any extra globals it needs at boot.
-
-Login: the wrapper auto-intercepts `dofustouch://authorized?code=...` in Rust
-(`on_navigation`) and feeds the code to `window.dofus.CustomAuth`; the
-`patches.json` login entry is a manual fallback.
+`patches.json` regexes key to the **minified** client bundle (currently
+**v3.2.13**) and must be re-derived when Ankama ships a new build. Patterns that
+don't match are skipped with a warning (`[dtd] patches: N applied, M skipped`),
+so a bumped client version that logs skips is the signal to update the affected
+regexes. The seed transforms mirror Lindo's `zenoxs/lindo-game-base` `regex.json`
+where possible.

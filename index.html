@@ -5,15 +5,10 @@
     <!--
       Clean Dofus Touch game-base bootstrap.
 
-      Served locally by the wrapper (via the `dofus://` Tauri protocol) from
-      <app_data>/game-base/. It fakes the Cordova/Android environment the
+      Served locally by the wrapper over a loopback HTTP server from
+      <userData>/game-base/. It fakes the Cordova/Android environment the
       mobile client expects, pulls Ankama's config.json, then loads the
-      patched client bundle from ./build/script.js.
-
-      PROVISIONAL: the exact client boot contract (whether the client reads
-      window.Config vs fetches config.json itself, extra globals it needs) is
-      tied to the live client version and must be confirmed against the real
-      build/script.js. See game-base/README.md.
+      patched client bundle from ./build/script.js. See game-base/README.md.
     -->
     <script>
       // --- Environment the mobile client expects -----------------------------
