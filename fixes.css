@@ -39,6 +39,17 @@ body,html{
   background: black;
 }
 
+/* The client insets the game with env(safe-area-inset-*) padding for the phone
+   notch. On desktop there is no notch, so that padding (plus any default
+   margins) just leaves a black border around the canvas. Strip it and force the
+   whole container chain (body > #resizableBody > #dofusBody) to fill. */
+html, body, #resizableBody, #dofusBody {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* Turn on custom 8px wide scrollbar */
 ::-webkit-scrollbar {
   width: 10px; /* 1px wider than Lion. */

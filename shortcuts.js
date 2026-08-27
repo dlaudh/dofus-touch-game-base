@@ -5,50 +5,37 @@
   "use strict";
   console.log("[dtd] shortcuts.js loaded");
 
-  // Attach the keyboard listener immediately — each handler checks window.gui
-  // at press time, so it doesn't need to wait for the client to boot. (The
-  // previous "poll for gui/isoEngine then setup" never completed reliably.)
+  // Attach the keyboard + wheel listeners immediately — each handler checks the
+  // client globals at event time, so they don't need to wait for the client to
+  // boot. (A previous "poll then setup" approach never completed reliably.)
   setupKeys();
+  setupZoom();
+  console.log("[dtd] shortcuts + zoom active");
 
-  // Zoom needs the game foreground element; poll until it exists.
-  var z = setInterval(function () {
-    if (!(window.foreground && window.foreground.rootElement)) return;
-    clearInterval(z);
-    setupZoom();
-    try {
-      var ids = window.gui.menuBar._icons._childrenList.map(function (c) {
-        return c.id;
-      });
-      console.log("[dtd] menu icons:", ids.join(", "));
-    } catch (e) {
-      /* noop */
-    }
-    console.log("[dtd] shortcuts + zoom active");
-  }, 500);
-
-  // Interface key -> menu-bar icon id (matched case-insensitively at runtime,
-  // so it's safe if an id is absent; the logged "menu icons" list lets these
-  // be tuned to the real ids).
+  // Interface key -> menu-bar icon CSS class (the icons carry classes like
+  // "menuIconBag", "menuIconSpell", ...). Matched against each icon's
+  // rootElement className at runtime; safe if absent.
   var IFACE = {
-    c: "characteristics",
-    i: "inventory",
-    p: "grimoire",
-    q: "quest",
-    b: "bank",
-    n: "social",
-    g: "guild",
-    h: "bestiary",
-    j: "job",
-    o: "map",
+    c: "menuiconcarac", // characteristics
+    s: "menuiconspell", // spells
+    i: "menuiconbag", // inventory
+    b: "menuiconbook", // grimoire / quests book
+    q: "menuicondailyquest", // daily quests
+    f: "menuiconfriend", // friends / social
+    j: "menuiconjob", // jobs
+    g: "menuiconguild", // guild
+    h: "menuiconbestiary", // bestiary
+    m: "menuiconmap", // world map
   };
-  function openInterface(id) {
+  function openInterface(cls) {
     try {
-      var icon = window.gui.menuBar._icons._childrenList.filter(function (c) {
-        return c.id && c.id.toLowerCase().indexOf(id) !== -1;
-      })[0];
-      if (icon && icon.tap) {
-        icon.tap();
-        return true;
+      var icons = window.gui.menuBar._icons._childrenList;
+      for (var i = 0; i < icons.length; i++) {
+        var el = icons[i].rootElement;
+        if (el && (el.className || "").toLowerCase().indexOf(cls) !== -1 && icons[i].tap) {
+          icons[i].tap();
+          return true;
+        }
       }
     } catch (e) {
       /* noop */
@@ -69,11 +56,12 @@
   }
 
   function setupZoom() {
-    var fg = window.foreground && window.foreground.rootElement;
-    if (!fg) return;
-    fg.addEventListener(
+    // Attach to the document (capture) so it works regardless of when the game
+    // foreground element appears; guard the client globals at wheel time.
+    document.addEventListener(
       "wheel",
       function (e) {
+        if (!window.isoEngine || !window.gui) return;
         try {
           var factor = 1 + -e.deltaY / 600;
           var wm = currentWorldMap();
@@ -83,15 +71,14 @@
             var dz = wm._scene.camera.zoomTarget / pz;
             wm._scene.move(0, 0, e.layerX * (dz - 1), e.layerY * (dz - 1), 1);
             wm._loadChunksInView && wm._loadChunksInView();
-          } else {
-            var ms = window.isoEngine.mapScene;
-            ms.camera.zoomTo(ms.camera.zoom * factor);
+          } else if (window.isoEngine.mapScene) {
+            window.isoEngine.mapScene.camera.zoomTo(window.isoEngine.mapScene.camera.zoom * factor);
           }
         } catch (err) {
           /* noop */
         }
       },
-      { passive: true }
+      { passive: true, capture: true }
     );
   }
 
