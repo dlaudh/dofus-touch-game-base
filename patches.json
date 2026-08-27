@@ -29,6 +29,12 @@
       "find": "(\\w+)\\.viewportWidth=\\1\\.viewportWidth\\|\\|(\\w+)\\.document\\.documentElement\\.clientWidth,\\1\\.viewportHeight=\\1\\.viewportHeight\\|\\|\\2\\.document\\.documentElement\\.clientHeight",
       "replace": "$1.viewportWidth=$2.document.documentElement.clientWidth,$1.viewportHeight=$2.document.documentElement.clientHeight",
       "note": "Make window resize actually resize the game. updateScreen() caches viewportWidth/Height (viewportWidth=viewportWidth||clientWidth) because the client assumes a device screen never changes size (isDevice=isIOS||isAndroid, which we spoof). Removing the cache makes _resizeUi() (which we drive on window resize in fixes.js) recompute from the current clientWidth/clientHeight."
+    },
+    {
+      "file": "build/script.js",
+      "find": "isPortraitMode=function\\(\\)\\{[^}]*\\}",
+      "replace": "isPortraitMode=function(){return !1}",
+      "note": "Force landscape layout so the UI docks on the right instead of stacking at the bottom. The client picks portrait (bottom UI) when innerHeight>innerWidth; on desktop we always want the landscape (right-side) layout."
     }
   ]
 }
