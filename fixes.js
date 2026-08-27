@@ -101,11 +101,15 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(resizeGameUi, 300);
   });
-  // Fix the initial layout once the client's UI exists.
+  // Fix the initial layout once the client's UI exists. Call it several times
+  // over the first few seconds: a single early call often doesn't "stick"
+  // while the client is still building its UI (which is why the landscape
+  // layout looked lost).
+  var resizeCount = 0;
   var resizeBoot = setInterval(function () {
     if (window.gui && window.gui._resizeUi) {
-      clearInterval(resizeBoot);
       resizeGameUi();
+      if (++resizeCount >= 8) clearInterval(resizeBoot);
     }
   }, 500);
 
