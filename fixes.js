@@ -106,9 +106,19 @@
   // while the client is still building its UI (which is why the landscape
   // layout looked lost).
   var resizeCount = 0;
+  var nudged = false;
   var resizeBoot = setInterval(function () {
     if (window.gui && window.gui._resizeUi) {
       resizeGameUi();
+      // Once, after the client has had a moment to build the map, ask main to
+      // nudge the window size — the only thing that reliably fits the map
+      // (removes the side black bars) and enables zoom on desktop.
+      if (!nudged) {
+        nudged = true;
+        setTimeout(function () {
+          if (window.__dtd && window.__dtd.nudgeResize) window.__dtd.nudgeResize();
+        }, 1500);
+      }
       if (++resizeCount >= 8) clearInterval(resizeBoot);
     }
   }, 500);
