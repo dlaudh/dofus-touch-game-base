@@ -96,6 +96,11 @@
       }
     } catch (e) {}
   }
+  // Exposed so the main process can drive a re-layout after OS resize / maximize
+  // / fullscreen settles (those report their final size too late for the
+  // renderer's own resize event).
+  window.__dtd_resize = resizeGameUi;
+
   var resizeTimer = null;
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
