@@ -17,6 +17,12 @@
       "find": "toggleClassName=function\\(e,t\\)\\{return ",
       "replace": "toggleClassName=function(e,t){if(!this.rootElement)return;return ",
       "note": "Guard toggleClassName against a null rootElement. On desktop there is no phone notch, so displayNotch()->toggleClassName() runs on a UI wrapper whose rootElement is null and throws during resize. Also protects any other null-rootElement toggle."
+    },
+    {
+      "file": "build/script.js",
+      "find": "(loginWithWebAuth=function\\(e,i\\)\\{return \\w{1,2}\\.setHaapiKey\\(e\\.accessKey,e\\.refreshKey)\\)",
+      "replace": "$1,{save:!0})",
+      "note": "Persist the Haapi key to localStorage (save:true) so the session survives restarts. loginWithWebAuth calls setHaapiKey without the save flag, so HAAPI_KEY/HAAPI_REFRESH_TOKEN are never written and the login is lost on relaunch."
     }
   ]
 }
