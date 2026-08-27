@@ -6,6 +6,17 @@
   min-width: 100% !important;
 }
 
+/* .fullScreenPopup (ConfirmPopup/SimplePopup) only sets a background in the
+   client CSS — no size — so on desktop it renders small. The client sizes
+   .window.fullScreen to 100% but not this class; force it to cover the screen
+   (its .windowContent is centered at 50%). */
+.fullScreenPopup {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 body,html{
   background: black;
 }
