@@ -21,6 +21,25 @@
     console.warn("[dtd] TouchEvent constructor unsupported on this WebView; mouse->touch shim disabled", e);
   }
 
+  // --- Native notifications from game events (read-only) -------------------
+  // PROVISIONAL event names — confirm against the live client and adjust.
+  function fireNotify(kind, detail) {
+    if (window.__dtd && window.__dtd.notify) window.__dtd.notify(kind, detail);
+  }
+  var notifyTimer = setInterval(function () {
+    if (!window.dofus && !window.gui) return;
+    clearInterval(notifyTimer);
+    try {
+      var bus = window.gui || window.dofus;
+      if (bus && bus.on) {
+        bus.on("GameFightTurnStartMessage", function () { fireNotify("turn", "Your turn"); });
+        bus.on("ChatServerMessage", function (m) { fireNotify("pm", (m && m.senderName) || "message"); });
+      }
+    } catch (e) {
+      console.warn("[dtd] notify hook failed", e);
+    }
+  }, 1000);
+
   if (touchSupported) {
     var MAP = { mousedown: "touchstart", mouseup: "touchend", mousemove: "touchmove" };
     var down = false;

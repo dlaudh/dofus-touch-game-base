@@ -16,24 +16,9 @@
       build/script.js. See game-base/README.md.
     -->
     <script>
-      // --- CORS proxy scope --------------------------------------------------
-      // tauri-plugin-cors-fetch proxies window.fetch through Rust to bypass
-      // CORS. But it proxies EVERYTHING by default, and Ankama's CDN
-      // (dofustouch.cdn.ankama.com, CloudFront) WAF-blocks non-browser
-      // (Rust) requests with a 403. Only haapi.ankama.com actually needs the
-      // bypass (its APIKEY header trips CORS), and haapi is reachable from a
-      // non-browser client. So restrict the proxy to haapi; everything else
-      // stays native (as it worked before the plugin).
-      (function restrictCors() {
-        if (window.CORSFetch && window.CORSFetch.config) {
-          window.CORSFetch.config({ include: [/haapi\.ankama\.com/i] });
-          console.log("[dtd] CORSFetch restricted to haapi.ankama.com");
-        } else {
-          setTimeout(restrictCors, 30);
-        }
-      })();
-
       // --- Environment the mobile client expects -----------------------------
+      // (Running under Electron with webSecurity:false, so cross-origin/CORS is
+      // handled natively — no fetch proxy needed.)
       // Touch no-op so the client's touch bindings attach cleanly.
       window.ontouchstart = function () {};
 
@@ -73,20 +58,17 @@
             registerDevice: function () {},
           },
           // The client opens the Ankama OAuth URL through browsertab. Bridge
-          // it to a Tauri auth window (see open_auth_window in Rust).
+          // it to a native auth window via the platform preload (window.__dtd).
           browsertab: {
             isAvailable: function (cb) {
               cb(true);
             },
             openUrl: function (url) {
-              var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
-              if (inv) inv("open_auth_window", { url: url }).catch(function (e) {
-                console.error("[dtd] open_auth_window failed", e);
-              });
+              if (window.__dtd) window.__dtd.openAuth(url);
+              else console.error("[dtd] __dtd bridge missing");
             },
             close: function () {
-              var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
-              if (inv) inv("close_auth_window").catch(function () {});
+              if (window.__dtd) window.__dtd.closeAuth();
             },
           },
         },
