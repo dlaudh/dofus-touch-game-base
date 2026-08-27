@@ -35,6 +35,24 @@
       "find": "isPortraitMode=function\\(\\)\\{[^}]*\\}",
       "replace": "isPortraitMode=function(){return !1}",
       "note": "Force landscape layout so the UI docks on the right instead of stacking at the bottom. The client picks portrait (bottom UI) when innerHeight>innerWidth; on desktop we always want the landscape (right-side) layout."
+    },
+    {
+      "file": "build/script.js",
+      "find": "(\\w)\\.FPS=60",
+      "replace": "$1.FPS=(window.__dtdSettings&&window.__dtdSettings.fps)||60",
+      "note": "Make the client's target FPS configurable (window.__dtdSettings.fps, which defaults to the monitor's refresh rate) instead of hard-capping at 60."
+    },
+    {
+      "file": "build/script.js",
+      "find": "stencil:!1,antialias:!1",
+      "replace": "stencil:!1,antialias:!!(window.__dtdSettings&&window.__dtdSettings.antialias)",
+      "note": "Make WebGL anti-aliasing configurable (window.__dtdSettings.antialias) — the client hard-disables it."
+    },
+    {
+      "file": "build/script.js",
+      "find": "(\\w)\\.devicePixelRatio\\?Math\\.min\\(\\1\\.devicePixelRatio,2\\)",
+      "replace": "$1.devicePixelRatio?Math.min($1.devicePixelRatio,(window.__dtdSettings&&window.__dtdSettings.pixelRatio)||2)",
+      "note": "Make the render pixel-ratio cap configurable (window.__dtdSettings.pixelRatio). The client caps PIXEL_RATIO at 2; this lets high-DPI displays render sharper (or lower for performance)."
     }
   ]
 }

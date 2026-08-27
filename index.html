@@ -35,6 +35,15 @@
         client: "android",
       };
 
+      // Render settings (fps/pixelRatio/antialias) read by the patched client
+      // bundle (see patches.json). Comes from the main process (fps defaults to
+      // the monitor's refresh rate); overridable via <userData>/settings.json.
+      window.__dtdSettings = (window.__dtd && window.__dtd.settings) || {
+        fps: 60,
+        pixelRatio: 2,
+        antialias: true,
+      };
+
       // The client feature-detects IndexedDB; stub it out (desktop WebView
       // storage is handled by the isolated data store instead).
       window.indexedDB = {};
@@ -113,24 +122,10 @@
         }
       };
 
-      // macOS WebKit fires requestAnimationFrame too aggressively for the
-      // client's render loop; throttle to ~60fps. Harmless elsewhere.
-      (function () {
-        var raf = function (callback) {
-          raf.queue.push(callback);
-          if (!raf.timeout) {
-            raf.timeout = setTimeout(function () {
-              var q = raf.queue;
-              raf.queue = [];
-              raf.timeout = null;
-              q.forEach(function (fn) { fn(); });
-            }, 16);
-          }
-        };
-        raf.queue = [];
-        raf.timeout = null;
-        window.requestAnimationFrame = raf;
-      })();
+      // NOTE: we deliberately do NOT override requestAnimationFrame. Lindo
+      // throttled it to ~60fps via setTimeout to tame WKWebView on macOS, but
+      // Electron/Chromium's native rAF is vsync-locked to the monitor's refresh
+      // rate — so the game renders at the display's framerate (60/120/144Hz).
 
       // Ankama's remote config. CORS-open (access-control-allow-origin: *).
       // Provisional host — mirrors config.dataUrl; overridable later.
