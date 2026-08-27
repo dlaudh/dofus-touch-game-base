@@ -23,6 +23,12 @@
       "find": "(loginWithWebAuth=function\\(e,i\\)\\{return \\w{1,2}\\.setHaapiKey\\(e\\.accessKey,e\\.refreshKey)\\)",
       "replace": "$1,{save:!0})",
       "note": "Persist the Haapi key to localStorage (save:true) so the session survives restarts. loginWithWebAuth calls setHaapiKey without the save flag, so HAAPI_KEY/HAAPI_REFRESH_TOKEN are never written and the login is lost on relaunch."
+    },
+    {
+      "file": "build/script.js",
+      "find": "(\\w+)\\.viewportWidth=\\1\\.viewportWidth\\|\\|(\\w+)\\.document\\.documentElement\\.clientWidth,\\1\\.viewportHeight=\\1\\.viewportHeight\\|\\|\\2\\.document\\.documentElement\\.clientHeight",
+      "replace": "$1.viewportWidth=$2.document.documentElement.clientWidth,$1.viewportHeight=$2.document.documentElement.clientHeight",
+      "note": "Make window resize actually resize the game. updateScreen() caches viewportWidth/Height (viewportWidth=viewportWidth||clientWidth) because the client assumes a device screen never changes size (isDevice=isIOS||isAndroid, which we spoof). Removing the cache makes _resizeUi() (which we drive on window resize in fixes.js) recompute from the current clientWidth/clientHeight."
     }
   ]
 }
