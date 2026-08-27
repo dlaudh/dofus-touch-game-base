@@ -19,6 +19,16 @@ html, body {
   height: 100% !important;
 }
 
+/* Fullscreen popups (ConfirmPopup/PopupAbstract with fullScreenPopup) are
+   sized/positioned in fixed px by the client, so they don't fill a resized
+   desktop window. Force them to cover it. */
+.fullScreenPopup {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* The shortcut bar drawer collapses on desktop widths without this. */
 .ShortcutBar .drawerContent {
   min-width: 100% !important;
