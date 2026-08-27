@@ -2,19 +2,21 @@
   "_comment": [
     "Regex patches applied to the downloaded client bundle (build/script.js)",
     "before it runs. Keyed to the minified client build (currently v3.2.13);",
-    "non-matching patterns are skipped with a warning.",
-    "",
-    "Kept MINIMAL on purpose: only safe, verified transforms so the stock",
-    "client can boot. Desktop/asset/login patches are added incrementally as",
-    "live testing shows what the client needs. Each entry: { file, find",
-    "(Rust regex), replace, note }."
+    "patterns are JavaScript RegExp; non-matching ones are skipped with a",
+    "warning. Each entry: { file, find, replace, note }."
   ],
   "patches": [
     {
       "file": "build/script.js",
       "find": "return t\\.m=e,t\\.c=i,t\\.p=\"\",t\\(0\\)",
       "replace": "window.singletons=t;return t.m=e,t.c=i,t.p=\"\",t(0)",
-      "note": "Expose the webpack module registry as window.singletons (verified against v3.2.13). Harmless; enables later hooks."
+      "note": "Expose the webpack module registry as window.singletons. Harmless; enables later hooks."
+    },
+    {
+      "file": "build/script.js",
+      "find": "toggleClassName=function\\(e,t\\)\\{return ",
+      "replace": "toggleClassName=function(e,t){if(!this.rootElement)return;return ",
+      "note": "Guard toggleClassName against a null rootElement. On desktop there is no phone notch, so displayNotch()->toggleClassName() runs on a UI wrapper whose rootElement is null and throws during resize. Also protects any other null-rootElement toggle."
     }
   ]
 }
