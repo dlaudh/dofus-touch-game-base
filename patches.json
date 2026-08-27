@@ -32,6 +32,18 @@
     },
     {
       "file": "build/script.js",
+      "find": "Math\\.min\\(Math\\.max\\((\\w),\\s?(\\w)\\),\\s?this\\.maxZoom\\)",
+      "replace": "Math.max($1,$2)",
+      "note": "Remove the black bars around the map on desktop. The isometric camera computes this.minZoom=Math.min(Math.max(fillW,fillH),this.maxZoom) — the most zoomed-out that still fills the view, CLAMPED to maxZoom. On a window larger than the map at maxZoom the clamp caps minZoom below the fill zoom, so the map can't zoom in enough and leaves side/top black bars. Dropping the clamp (minZoom=Math.max(fillW,fillH)) lets it always fill. This is Lindo's fix (zenoxs/lindo-game-base regex.json): [\"Math.min(Math.max((\\\\w),(\\\\w)),this.maxZoom)\" -> \"Math.max($1,$2)\"]. Matches once (the minZoom clamp); the minZoom/currentZoom clamps have non-\\w args and are left intact."
+    },
+    {
+      "file": "build/script.js",
+      "find": "this\\.ipadRatio=q\\.bottomMenuBar",
+      "replace": "q.bottomMenuBar=window.innerWidth/window.innerHeight<=1.5,this.ipadRatio=q.bottomMenuBar",
+      "note": "Switch the menu dock (bottom=portrait vs right=landscape) by window shape on every relayout. The client derives the dock from the persisted `bottomMenuBar` game-option, defaulted ONCE at init from the boot aspect ratio (screenWidth/screenHeight<=IPAD_SCREEN_RATIO=1.5) and never recomputed on resize, so maximizing a portrait-shaped window never flips the dock. _resizeUi (which we drive on resize/maximize) reads q.bottomMenuBar right here; recompute it from the current window aspect first. Direct field-set (not changeValue) on purpose: avoids re-emitting bottomMenuBar (whose only listener is _resizeUi itself) and avoids persisting a shape-derived value over the user's saved pref. IPAD_SCREEN_RATIO=1.5: ratio<=1.5 -> bottom (portrait) dock, ratio>1.5 -> right (landscape) dock."
+    },
+    {
+      "file": "build/script.js",
       "find": "(\\w)\\.FPS=60",
       "replace": "$1.FPS=(window.__dtdSettings&&window.__dtdSettings.fps)||60",
       "note": "Make the client's target FPS configurable (window.__dtdSettings.fps, which defaults to the monitor's refresh rate) instead of hard-capping at 60."

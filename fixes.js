@@ -114,26 +114,50 @@
       setTimeout(resizeGameUi, 1000);
     }, 80);
   });
-  // Fix the initial layout once the client's UI exists. Call it several times
-  // over the first few seconds: a single early call often doesn't "stick"
-  // while the client is still building its UI (which is why the landscape
-  // layout looked lost).
+  // Fit the map/canvas once the character loads. The map scene canvas
+  // (isoEngine.mapScene.canvas) is only created AFTER character selection —
+  // long after the login UI exists, and gated on the user logging in. A fixed
+  // boot timer expires while still on the login/character screen, so it never
+  // fits the actual game canvas. Mirror Lindo: re-fit on the
+  // 'characterSelectedSuccess' game event (Lindo runs fixMaxZoom there), the
+  // moment the canvas is ready.
+  var whenCanvasReady = function (cb) {
+    var tries = 0;
+    var wait = setInterval(function () {
+      var ready =
+        window.isoEngine && window.isoEngine.mapScene && window.isoEngine.mapScene.canvas;
+      if (ready || ++tries > 40) {
+        clearInterval(wait);
+        cb();
+      }
+    }, 250);
+  };
+  var fitAfterLogin = function () {
+    // Fit the map the moment its canvas exists (mirrors Lindo's fixMaxZoom on
+    // 'characterSelectedSuccess'). The camera minZoom clamp that used to leave
+    // side black bars is removed via patches.json, so a plain _resizeUi now
+    // fills the view — no OS window nudge needed.
+    whenCanvasReady(function () {
+      resizeGameUi();
+      setTimeout(resizeGameUi, 400);
+    });
+  };
+
+  // Fix the initial (login-screen) layout once the client's UI exists — call it
+  // a few times because an early call doesn't "stick" while the UI is building.
+  // Separately, attach the character-selected hook as soon as playerData exists.
   var resizeCount = 0;
-  var nudged = false;
+  var hooked = false;
   var resizeBoot = setInterval(function () {
     if (window.gui && window.gui._resizeUi) {
       resizeGameUi();
-      // Once, after the client has had a moment to build the map, ask main to
-      // nudge the window size — the only thing that reliably fits the map
-      // (removes the side black bars) and enables zoom on desktop.
-      if (!nudged) {
-        nudged = true;
-        setTimeout(function () {
-          if (window.__dtd && window.__dtd.nudgeResize) window.__dtd.nudgeResize();
-        }, 1500);
-      }
-      if (++resizeCount >= 8) clearInterval(resizeBoot);
+      resizeCount++;
     }
+    if (!hooked && window.gui && window.gui.playerData && window.gui.playerData.on) {
+      hooked = true;
+      window.gui.playerData.on("characterSelectedSuccess", fitAfterLogin);
+    }
+    if (hooked && resizeCount >= 8) clearInterval(resizeBoot);
   }, 500);
 
   if (touchSupported) {
