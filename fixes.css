@@ -35,6 +35,22 @@
   transform: none !important;
 }
 
+/* The login settings window (.window.loginSettingsWindow.fullScreen) is
+   positioned by the client's window manager via an inline
+   webkitTransform: translate3d(x, Y, 0) — Y is its computed vertical position
+   (buildWindowStyleFromInfo), which on a tall desktop window lands ~256px down
+   and shoves it below where it belongs. Neutralize the transform so it sits at
+   its CSS origin; the open/close opacity fade (a separate inline property) is
+   untouched. */
+.loginSettingsWindow.fullScreen {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  -webkit-transform: none !important;
+  transform: none !important;
+}
+
 body,html{
   background: black;
 }
