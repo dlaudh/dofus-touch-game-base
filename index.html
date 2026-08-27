@@ -22,10 +22,12 @@
       // Touch no-op so the client's touch bindings attach cleanly.
       window.ontouchstart = function () {};
 
-      // App/build identity. Provisional values — the real client keys these to
-      // the shipped bundle; adjust once the live build is wired.
-      window.appVersion = "1.0.0";
-      window.buildVersion = "1.0.0";
+      // App identity. The login server rejects a mismatched appVersion
+      // (INCOMPATIBLE_APP_VERSION), so use the live App Store version the main
+      // process looked up (falls back to a pinned version). buildVersion is
+      // overwritten by the client itself once it boots.
+      window.appVersion = (window.__dtd && window.__dtd.appVersion) || "3.11.0";
+      window.buildVersion = window.appVersion;
       window.appInfo = { version: window.appVersion };
       window._ = {
         appVersion: window.appVersion,
