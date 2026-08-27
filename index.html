@@ -88,12 +88,24 @@
       };
 
       // Called by Rust (via eval) when the auth window captures the redirect.
-      // Passes a match object covering the shapes Ionic Deeplink callbacks read.
+      // The client's deeplink callback reads e.host, e.path, e.queryString and
+      // e.url (it parses queryString for `code`), so build that exact shape.
+      // For dofustouch://authorized?code=XXX -> host="authorized",
+      // path="", queryString="code=XXX".
       window.__dtd_onAuthRedirect = function (url) {
         try {
           console.log("[dtd] auth redirect received:", url);
+          var m = /^([^:]+):\/\/([^/?#]*)([^?#]*)(?:\?([^#]*))?/.exec(url) || [];
+          var match = {
+            url: url,
+            scheme: m[1] || "",
+            host: m[2] || "",
+            path: m[3] || "",
+            queryString: m[4] || "",
+          };
+          console.log("[dtd] deeplink match:", JSON.stringify(match));
           var cb = window.__dtd_deeplinkCb;
-          if (cb) cb({ url: url, $link: { url: url } });
+          if (cb) cb(match);
           else console.warn("[dtd] no deeplink callback registered yet");
         } catch (e) {
           console.error("[dtd] deeplink callback error", e);
