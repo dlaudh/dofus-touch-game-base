@@ -99,7 +99,15 @@
   var resizeTimer = null;
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resizeGameUi, 300);
+    // Call _resizeUi several times after the resize settles. Maximize/animated
+    // resizes report their final innerWidth/innerHeight late, so a single
+    // debounced call catches an intermediate size and leaves black bars.
+    resizeTimer = setTimeout(function () {
+      resizeGameUi();
+      setTimeout(resizeGameUi, 250);
+      setTimeout(resizeGameUi, 600);
+      setTimeout(resizeGameUi, 1000);
+    }, 80);
   });
   // Fix the initial layout once the client's UI exists. Call it several times
   // over the first few seconds: a single early call often doesn't "stick"
