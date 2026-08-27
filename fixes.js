@@ -40,6 +40,42 @@
     }
   }, 1000);
 
+  // --- Window resize -> re-layout the client (mirrors Lindo) ---------------
+  // The client only recomputes its UI on its own internal resize path, so on
+  // desktop it looks broken after a window resize. Drive gui._resizeUi() from
+  // the window resize event (debounced), and bump the isometric map camera's
+  // maxZoom so the map fills a taller desktop canvas.
+  var backupMaxZoom = null;
+  function resizeGameUi() {
+    try {
+      if (window.gui && window.gui._resizeUi) window.gui._resizeUi();
+    } catch (e) {
+      console.warn("[dtd] _resizeUi failed", e);
+    }
+    try {
+      var iso = window.isoEngine;
+      if (iso && iso.mapScene && iso.mapScene.camera && iso.mapScene.canvas) {
+        if (backupMaxZoom === null) backupMaxZoom = iso.mapScene.camera.maxZoom;
+        iso.mapScene.camera.maxZoom = Math.max(
+          backupMaxZoom,
+          backupMaxZoom + (iso.mapScene.canvas.height / 800 - 1)
+        );
+      }
+    } catch (e) {}
+  }
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizeGameUi, 300);
+  });
+  // Fix the initial layout once the client's UI exists.
+  var resizeBoot = setInterval(function () {
+    if (window.gui && window.gui._resizeUi) {
+      clearInterval(resizeBoot);
+      resizeGameUi();
+    }
+  }, 500);
+
   if (touchSupported) {
     var MAP = { mousedown: "touchstart", mouseup: "touchend", mousemove: "touchmove" };
     var down = false;
