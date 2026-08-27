@@ -2,6 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- The mobile client lays its UI out against documentElement.clientWidth/
+         Height. Without this, an Android WebView defaults to a ~980px layout
+         viewport and the client's windows render for the wrong size (cut off).
+         width=device-width makes the layout viewport match the real screen;
+         viewport-fit=cover lets it draw under the notch. Harmless on desktop. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <!--
       Clean Dofus Touch game-base bootstrap.
 
