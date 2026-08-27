@@ -101,13 +101,28 @@
             return;
           }
 
-          // Number keys 1-8: cast the matching spell slot (out of / in fight).
-          if (k >= "1" && k <= "8") {
-            var slot = g.shortcutBar._panels.spell.slotList[parseInt(k, 10) - 1];
+          // Digit 1-8: spell slot; Shift+Digit 1-8: item slot.
+          var m = /^Digit([1-8])$/.exec(e.code || "");
+          if (m) {
+            var idx = parseInt(m[1], 10) - 1;
+            var panel = e.shiftKey ? "item" : "spell";
+            var slot = g.shortcutBar._panels[panel].slotList[idx];
             if (slot && slot.tap) {
               slot.tap();
               e.preventDefault();
             }
+            return;
+          }
+
+          // Arrow keys: change to the neighbouring map (via the ported mover).
+          var dir = { arrowup: "top", arrowdown: "bottom", arrowleft: "left", arrowright: "right" }[k];
+          if (dir && window.__dtdMover) {
+            window.__dtdMover.move(
+              dir,
+              function () {},
+              function () {}
+            );
+            e.preventDefault();
             return;
           }
         } catch (err) {
