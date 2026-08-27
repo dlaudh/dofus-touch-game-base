@@ -32,12 +32,6 @@
     },
     {
       "file": "build/script.js",
-      "find": "isPortraitMode=function\\(\\)\\{[^}]*\\}",
-      "replace": "isPortraitMode=function(){return !1}",
-      "note": "Force landscape layout so the UI docks on the right instead of stacking at the bottom. The client picks portrait (bottom UI) when innerHeight>innerWidth; on desktop we always want the landscape (right-side) layout."
-    },
-    {
-      "file": "build/script.js",
       "find": "(\\w)\\.FPS=60",
       "replace": "$1.FPS=(window.__dtdSettings&&window.__dtdSettings.fps)||60",
       "note": "Make the client's target FPS configurable (window.__dtdSettings.fps, which defaults to the monitor's refresh rate) instead of hard-capping at 60."
