@@ -1,5 +1,5 @@
 /**
- * mover.js — faithful port of Lindo's Mover + PathFinder (A*) + supporting classes.
+ * mover.js — faithful port of the reference client's Mover + PathFinder (A*) + supporting classes.
  * Source: packages/renderer/src/mods/shortcuts/mover.ts
  *         packages/renderer/src/mods/helpers/path-finder/path-finder.ts
  *         packages/renderer/src/mods/helpers/path-finder/cell-path-candidate.ts
@@ -11,7 +11,7 @@
  * fail: (reason: string) => void
  *
  * No gameplay automation beyond arrow-key map-edge navigation (identical to
- * what Lindo's Mover provides). Uses only game-client globals already on
+ * what the reference client's Mover provides). Uses only game-client globals already on
  * window (isoEngine, gui, dofus).
  */
 (function () {
@@ -372,7 +372,7 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  // Single shared PathFinder instance (matches Lindo's this.pathFinder pattern)
+  // Single shared PathFinder instance (matches the reference client's this.pathFinder pattern)
   var pathFinder = new PathFinder();
 
   function isMobOnCell(cellId) {

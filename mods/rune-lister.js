@@ -1,6 +1,6 @@
 // rune-lister — Listens for use of a Magic Fragment (forgemagie rune-cracker,
 // GID 8378) and reports the rune quantities that changed as a result directly
-// into the chat log.  Ported from Lindo's RuneListerMod (TypeScript) to plain
+// into the chat log.  Ported from the reference client's RuneListerMod (TypeScript) to plain
 // JS for the Dofus Touch Electron wrapper.
 (function () {
   "use strict";

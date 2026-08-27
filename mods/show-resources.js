@@ -1,5 +1,5 @@
 // show-resources.js
-// Faithful port of Lindo's show-resources mod (packages/renderer/src/mods/show-resources/).
+// Faithful port of the reference client's show-resources mod (packages/renderer/src/mods/show-resources/).
 // Merges resources.ts + show-resources.ts into a single self-contained IIFE.
 // Scans the current map for harvestable interactive elements (trees, ore, fish, plants,
 // wheat fields, etc.) and shows a centered HUD bar at the top of the screen listing

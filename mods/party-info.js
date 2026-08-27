@@ -1,5 +1,5 @@
 // party-info.js
-// Port of Lindo's party-info mod (packages/renderer/src/mods/party-info/).
+// Port of the reference client's party-info mod (packages/renderer/src/mods/party-info/).
 // Merges party-info.ts + party-member-on-map.ts into a single self-contained IIFE.
 //
 // PartyInfo:       Injects a small container above the party-member boxes showing the

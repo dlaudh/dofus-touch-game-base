@@ -1,5 +1,5 @@
-// Keyboard shortcuts + mouse-wheel zoom for desktop, mirroring Lindo's
-// approach (all through the client's own window.gui / window.isoEngine APIs).
+// Keyboard shortcuts + mouse-wheel zoom for desktop, mirroring the reference
+// client's approach (all through the client's own window.gui / window.isoEngine APIs).
 // No gameplay automation — just input conveniences a mobile client lacks.
 (function () {
   "use strict";

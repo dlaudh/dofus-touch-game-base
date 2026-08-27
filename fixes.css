@@ -1,12 +1,12 @@
-/* Style fixes copied from lindo-game-base (fixes.css). The client's own
+/* Style fixes copied from the reference client (fixes.css). The client's own
    styles-native.css already sizes its containers; these are the only style
-   tweaks Lindo applies. No custom rules. */
+   tweaks the reference client applies. No custom rules. */
 
 .ShortcutBar .drawerContent {
   min-width: 100% !important;
 }
 
-/* From Lindo's css-overload mod: hide the decorative top border strip and fix
+/* From the reference client's css-overload mod: hide the decorative top border strip and fix
    a couple of borders that render wrong on desktop. */
 .topBorder {
   max-width: 0;

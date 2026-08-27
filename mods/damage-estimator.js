@@ -1,5 +1,5 @@
 // damage-estimator.js
-// Faithful port of Lindo's damage-estimator mod (packages/renderer/src/mods/damage-estimator/).
+// Faithful port of the reference client's damage-estimator mod (packages/renderer/src/mods/damage-estimator/).
 // Shows estimated spell damage (normal + critical) as floating overlays on each enemy fighter
 // during combat, hooked via window.gui (spellSlotSelected / spellSlotDeselected events) and
 // window.isoEngine (cell coordinate conversion). No external dependencies.

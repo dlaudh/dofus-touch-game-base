@@ -1,5 +1,5 @@
 // job-xp.js
-// Port of Lindo's job-xp mod (packages/renderer/src/mods/job-xp/).
+// Port of the reference client's job-xp mod (packages/renderer/src/mods/job-xp/).
 // Overlays a small panel (top-right of the foreground) that lists every job the
 // player has, showing XP remaining until the next level.  The panel hides during
 // fights (GameFightStartingMessage) and re-appears when the fight ends or the
@@ -9,7 +9,7 @@
   "use strict";
 
   // ---------------------------------------------------------------------------
-  // CSS — injected once into document.head (same selectors/values as Lindo)
+  // CSS — injected once into document.head (same selectors/values as the reference client)
   // ---------------------------------------------------------------------------
   var CSS_ID = "jobsxpbarCss";
   var PANEL_ID = "xpRestanteId";
@@ -110,7 +110,7 @@
   /**
    * Build (or rebuild) the XP panel.
    * Retries every 500 ms until playerData.jobs.list is available and the first
-   * job entry has an `experience` object (matching Lindo's retry guard).
+   * job entry has an `experience` object (matching the reference client's retry guard).
    */
   function create() {
     setTimeout(function () {

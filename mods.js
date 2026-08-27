@@ -1,6 +1,6 @@
 // Loads the QoL mods from game-base/mods/*.js. Each mod is a self-contained
 // IIFE that waits for the client (window.gui/isoEngine) and hooks it. Add new
-// mods to the list below as they are ported from Lindo.
+// mods to the list below as they are ported from the reference client.
 (function () {
   "use strict";
   var MODS = [

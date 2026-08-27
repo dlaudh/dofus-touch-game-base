@@ -1,5 +1,5 @@
 /**
- * fight-chronometer — faithful plain-JS port of Lindo's FightChronometerMod.
+ * fight-chronometer — faithful plain-JS port of the reference client's FightChronometerMod.
  *
  * Displays a HH:MM:SS counter inside the fight UI (.infoContainer) that
  * starts when GameFightStartMessage fires and resets on GameFightEndMessage /
@@ -9,7 +9,6 @@
  *
  * Original source:
  *   packages/renderer/src/mods/fight-chronometer/fight-chronometer.ts
- *   (Lindo project — https://github.com/pihta24/lindo)
  */
 (function () {
   "use strict";

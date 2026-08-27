@@ -3,8 +3,8 @@
 // the player is harvesting it (gathering profession animations). Listens to
 // StatedElementUpdatedMessage to map element IDs to cell coordinates, then
 // InteractiveUsedMessage to start the bar, and InteractiveUseEndedMessage to
-// remove it. Ported from Lindo's HarvestBarMod / HarvestBar (TypeScript) to a
-// plain JS IIFE for the dofus-touch-emu Electron wrapper.
+// remove it. Ported from the reference client's HarvestBarMod / HarvestBar (TypeScript) to a
+// plain JS IIFE for this Electron wrapper.
 (function () {
   "use strict";
 

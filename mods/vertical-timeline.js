@@ -1,7 +1,7 @@
 // vertical-timeline.js
 // Turns the fight turn-order timeline from horizontal to vertical by injecting
 // a <style> block and toggling CSS classes + iScroll axis options on the
-// gui.timeline widget. Ported from Lindo's VerticalTimelineMod (TypeScript).
+// gui.timeline widget. Ported from the reference client's VerticalTimelineMod (TypeScript).
 // Always-on (no settings store needed); waits for window.gui to be ready.
 (function () {
   "use strict";

@@ -1,5 +1,5 @@
 // keyboard-input-pad.js
-// Port of Lindo's KeyboardInputPadMod.
+// Port of the reference client's KeyboardInputPadMod.
 // When the on-screen numeric input pad (window.gui.numberInputPad) is visible,
 // routes physical keyboard digit (0-9), Backspace, and Enter keys to the pad's
 // own API methods (_doDigit, _doBackspace, _doEnter), so the pad can be

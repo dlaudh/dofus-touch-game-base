@@ -1,5 +1,5 @@
 // chat-history.js
-// Port of Lindo's ChatHistoryMod (packages/renderer/src/mods/general/chat-history.ts).
+// Port of the reference client's ChatHistoryMod (packages/renderer/src/mods/general/chat-history.ts).
 // Adds ArrowUp / ArrowDown keyboard navigation through the game's built-in
 // sent-message history while the chat input field is focused.  The input
 // element (.inputChat) is found after the client boots, then a single

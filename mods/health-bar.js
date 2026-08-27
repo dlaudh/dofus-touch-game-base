@@ -1,5 +1,5 @@
 // health-bar.js
-// Faithful port of Lindo's health-bar mod (packages/renderer/src/mods/health-bar/).
+// Faithful port of the reference client's health-bar mod (packages/renderer/src/mods/health-bar/).
 // Merges bar.ts + health-bar.ts into a single self-contained IIFE.
 // Displays HP/shield bars and numeric HP text above each fighter during combat,
 // positioned using the game's own isoEngine coordinate APIs.

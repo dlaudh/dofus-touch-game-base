@@ -1,6 +1,6 @@
 // challenge-percent.js
 // Shows the XP bonus percentage directly on the challenge icon in the fight HUD.
-// Ported from Lindo's ChallengePercentMod (TypeScript) for the dofus-touch-emu
+// Ported from the reference client's ChallengePercentMod (TypeScript) for this
 // Electron wrapper.  Injects a small <style> block that widens the challenge
 // slot and positions an overlay <div> bearing "+N%" text, populated whenever a
 // ChallengeInfoMessage arrives from the server.

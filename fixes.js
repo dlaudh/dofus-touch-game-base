@@ -40,7 +40,7 @@
   // The Dofus Touch client is a TOUCH client: it binds touchstart/touchend/
   // touchmove and ignores mouse events. On desktop there are no touch events,
   // so the game looks frozen / unresponsive to clicks and drags. Synthesize
-  // TouchEvents from mouse input, exactly the shim Lindo uses.
+  // TouchEvents from mouse input, exactly the shim the reference client uses.
   //
   // Requires constructable Touch + TouchEvent (Chromium: yes; some WebKit
   // builds: no). Feature-detect and warn if unsupported so we can pick another
@@ -73,7 +73,7 @@
     }
   }, 1000);
 
-  // --- Window resize -> re-layout the client (mirrors Lindo) ---------------
+  // --- Window resize -> re-layout the client (mirrors the reference client) ---------------
   // The client only recomputes its UI on its own internal resize path, so on
   // desktop it looks broken after a window resize. Drive gui._resizeUi() from
   // the window resize event (debounced), and bump the isometric map camera's
@@ -118,8 +118,8 @@
   // (isoEngine.mapScene.canvas) is only created AFTER character selection —
   // long after the login UI exists, and gated on the user logging in. A fixed
   // boot timer expires while still on the login/character screen, so it never
-  // fits the actual game canvas. Mirror Lindo: re-fit on the
-  // 'characterSelectedSuccess' game event (Lindo runs fixMaxZoom there), the
+  // fits the actual game canvas. Mirror the reference client: re-fit on the
+  // 'characterSelectedSuccess' game event (the reference client runs fixMaxZoom there), the
   // moment the canvas is ready.
   var whenCanvasReady = function (cb) {
     var tries = 0;
@@ -133,7 +133,7 @@
     }, 250);
   };
   var fitAfterLogin = function () {
-    // Fit the map the moment its canvas exists (mirrors Lindo's fixMaxZoom on
+    // Fit the map the moment its canvas exists (mirrors the reference client's fixMaxZoom on
     // 'characterSelectedSuccess'). The camera minZoom clamp that used to leave
     // side black bars is removed via patches.json, so a plain _resizeUi now
     // fills the view — no OS window nudge needed.

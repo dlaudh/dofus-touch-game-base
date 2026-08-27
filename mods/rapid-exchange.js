@@ -1,5 +1,5 @@
 // rapid-exchange.js
-// Ported from Lindo's RapidExchangeMod (packages/renderer/src/mods/rapid-exchange/).
+// Ported from the reference client's RapidExchangeMod (packages/renderer/src/mods/rapid-exchange/).
 // Lets the player hold Ctrl (or Cmd on macOS) and double-tap an item slot in the bank
 // exchange, storage, or trade windows to instantly move the full stack — bypassing the
 // MinMax quantity selector.  Works for: exchangeInventory, exchangeStorage,
@@ -153,7 +153,7 @@
           var tradeWithPlayer = getWindow('tradeWithPlayer');
           if (!tradeWithPlayer || tradeWithPlayer.id !== 'tradeWithPlayer') return;
 
-          // The slot may not exist in the DOM yet — defer 500 ms (same as Lindo)
+          // The slot may not exist in the DOM yet — defer 500 ms (same as the reference client)
           setTimeout(function () {
             try {
               var slot = tradeWithPlayer._myTradeSpace._allSlots.getChild('slot' + uid);

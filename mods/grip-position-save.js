@@ -5,7 +5,7 @@
 // under the key "dtd-grip-positions".  On init (and on gui "resize") each saved
 // position is re-applied via a per-element <style> injected into the game
 // document's <head>, clamped so the element cannot be dragged off-screen.
-// Ported from Lindo's GripPositionSaveMod (TypeScript / MobX-State-Tree).
+// Ported from the reference client's GripPositionSaveMod (TypeScript / MobX-State-Tree).
 (function () {
   "use strict";
 

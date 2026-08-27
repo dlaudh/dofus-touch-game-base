@@ -34,7 +34,7 @@
       "file": "build/script.js",
       "find": "Math\\.min\\(Math\\.max\\((\\w),\\s?(\\w)\\),\\s?this\\.maxZoom\\)",
       "replace": "Math.max($1,$2)",
-      "note": "Remove the black bars around the map on desktop. The isometric camera computes this.minZoom=Math.min(Math.max(fillW,fillH),this.maxZoom) — the most zoomed-out that still fills the view, CLAMPED to maxZoom. On a window larger than the map at maxZoom the clamp caps minZoom below the fill zoom, so the map can't zoom in enough and leaves side/top black bars. Dropping the clamp (minZoom=Math.max(fillW,fillH)) lets it always fill. This is Lindo's fix (zenoxs/lindo-game-base regex.json): [\"Math.min(Math.max((\\\\w),(\\\\w)),this.maxZoom)\" -> \"Math.max($1,$2)\"]. Matches once (the minZoom clamp); the minZoom/currentZoom clamps have non-\\w args and are left intact."
+      "note": "Remove the black bars around the map on desktop. The isometric camera computes this.minZoom=Math.min(Math.max(fillW,fillH),this.maxZoom) — the most zoomed-out that still fills the view, CLAMPED to maxZoom. On a window larger than the map at maxZoom the clamp caps minZoom below the fill zoom, so the map can't zoom in enough and leaves side/top black bars. Dropping the clamp (minZoom=Math.max(fillW,fillH)) lets it always fill. Mirrors a known upstream regex.json fix: [\"Math.min(Math.max((\\\\w),(\\\\w)),this.maxZoom)\" -> \"Math.max($1,$2)\"]. Matches once (the minZoom clamp); the minZoom/currentZoom clamps have non-\\w args and are left intact."
     },
     {
       "file": "build/script.js",

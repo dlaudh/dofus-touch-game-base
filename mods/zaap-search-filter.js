@@ -2,7 +2,7 @@
 // Adds a live search/filter input and favourite-star buttons to the Zaap,
 // Zaapi (subway), and Prisme teleport dialogs. Favourites are stored in
 // localStorage under the key "zaapFav" and are sorted to the top of each list.
-// Ported from Lindo's ZaapSearchFilterMod (TypeScript) to plain JS.
+// Ported from the reference client's ZaapSearchFilterMod (TypeScript) to plain JS.
 (function () {
   "use strict";
 
@@ -64,8 +64,8 @@
   // ---- Shared CSS (injected once per dialog open) ---------------------------
 
   var SHARED_CSS = [
-    ".lindo_zaapSearch__container{padding:10px;width:100%;}",
-    ".lindo_zaapSearch__input{text-align:center;width:96%;margin-right:10px;",
+    ".dtd_zaapSearch__container{padding:10px;width:100%;}",
+    ".dtd_zaapSearch__input{text-align:center;width:96%;margin-right:10px;",
     "background-color:#424242;border-radius:5px;color:white;",
     "border-color:#262626;height:34px;font-size:1em;}"
   ].join("");
@@ -87,8 +87,8 @@
     zaapSearchInput = document.createElement("input");
     zaapSearchInput.setAttribute("placeholder", placeholder);
     zaapSearchInput.setAttribute("id", "zaapName");
-    zaapSearchContainer.classList.add("lindo_zaapSearch__container");
-    zaapSearchInput.classList.add("lindo_zaapSearch__input");
+    zaapSearchContainer.classList.add("dtd_zaapSearch__container");
+    zaapSearchInput.classList.add("dtd_zaapSearch__input");
     zaapSearchContainer.appendChild(zaapSearchInput);
     bodyEl.insertBefore(zaapSearchContainer, bodyEl.firstChild);
 
@@ -186,23 +186,23 @@
 
   function createSearchFilter() {
     // Zaap
-    if (!injectInput("zaapBody", "lindo_zaapBodyHeight__custom", "Search zaap...")) return;
-    attachFilter("lindo_zaapBodyHeight__custom");
-    addFavs("lindo_zaapBodyHeight__custom");
+    if (!injectInput("zaapBody", "dtd_zaapBodyHeight__custom", "Search zaap...")) return;
+    attachFilter("dtd_zaapBodyHeight__custom");
+    addFavs("dtd_zaapBodyHeight__custom");
   }
 
   function createSearchFilterZaapi() {
     // Zaapi / subway
-    if (!injectInput("subwayBody", "lindo_subwayBodyHeight__custom", "Search zaapi...")) return;
-    attachFilter("lindo_subwayBodyHeight__custom");
-    addFavs("lindo_subwayBodyHeight__custom");
+    if (!injectInput("subwayBody", "dtd_subwayBodyHeight__custom", "Search zaapi...")) return;
+    attachFilter("dtd_subwayBodyHeight__custom");
+    addFavs("dtd_subwayBodyHeight__custom");
   }
 
   function createSearchFilterPrisme() {
     // Prisme
-    if (!injectInput("zaapBody", "lindo_prismeBodyHeight__custom", "Search prisme...")) return;
-    attachFilter("lindo_prismeBodyHeight__custom");
-    addFavs("lindo_prismeBodyHeight__custom");
+    if (!injectInput("zaapBody", "dtd_prismeBodyHeight__custom", "Search prisme...")) return;
+    attachFilter("dtd_prismeBodyHeight__custom");
+    addFavs("dtd_prismeBodyHeight__custom");
   }
 
   // ---- Initialisation (poll until client globals are ready) -----------------

@@ -1,5 +1,5 @@
 // show-pods.js
-// Port of Lindo's show-pods mod (packages/renderer/src/mods/general/show-pods.ts).
+// Port of the reference client's show-pods mod (packages/renderer/src/mods/general/show-pods.ts).
 // When the equipment/inventory window is opened, replaces the capacity progress-bar
 // label with a live numeric readout of remaining pod capacity (maxWeight - weight),
 // formatted with thousands separators.  Updates in real time via InventoryWeightMessage.
@@ -175,7 +175,7 @@
     // we can remove and replace it each time the window opens.
     var inventoryWeightListener = { current: null };
 
-    // The Lindo source registers on 'open'; if already in openState it calls
+    // The reference client's source registers on 'open'; if already in openState it calls
     // show() directly, otherwise it waits for the 'opened' event.
     equipmentWindow.on("open", function () {
       try {

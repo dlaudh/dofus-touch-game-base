@@ -117,8 +117,8 @@
         }
       };
 
-      // NOTE: we deliberately do NOT override requestAnimationFrame. Lindo
-      // throttled it to ~60fps via setTimeout to tame WKWebView on macOS, but
+      // NOTE: we deliberately do NOT override requestAnimationFrame. An earlier
+      // approach throttled it to ~60fps via setTimeout to tame WKWebView on macOS, but
       // Electron/Chromium's native rAF is vsync-locked to the monitor's refresh
       // rate — so the game renders at the display's framerate (60/120/144Hz).
 
