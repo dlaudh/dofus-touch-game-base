@@ -6,6 +6,19 @@
   min-width: 100% !important;
 }
 
+/* From Lindo's css-overload mod: hide the decorative top border strip and fix
+   a couple of borders that render wrong on desktop. */
+.topBorder {
+  max-width: 0;
+}
+.PingBtn .borderBox .emoteBtn::before {
+  border-width: 20px;
+  border-image-slice: 40;
+}
+.NumberInputBox[readonly="readonly"] {
+  -webkit-user-select: none;
+}
+
 /* .fullScreenPopup (ConfirmPopup/SimplePopup) only sets a background in the
    client CSS — no size — so on desktop it renders small. The client sizes
    .window.fullScreen to 100% but not this class; force it to cover the screen

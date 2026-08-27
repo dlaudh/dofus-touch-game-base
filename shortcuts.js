@@ -9,8 +9,46 @@
     clearInterval(boot);
     setupZoom();
     setupKeys();
+    try {
+      var ids = window.gui.menuBar._icons._childrenList.map(function (c) {
+        return c.id;
+      });
+      console.log("[dtd] menu icons:", ids.join(", "));
+    } catch (e) {
+      /* noop */
+    }
     console.log("[dtd] shortcuts + zoom active");
   }, 500);
+
+  // Interface key -> menu-bar icon id (matched case-insensitively at runtime,
+  // so it's safe if an id is absent; the logged "menu icons" list lets these
+  // be tuned to the real ids).
+  var IFACE = {
+    c: "characteristics",
+    i: "inventory",
+    p: "grimoire",
+    q: "quest",
+    b: "bank",
+    n: "social",
+    g: "guild",
+    h: "bestiary",
+    j: "job",
+    o: "map",
+  };
+  function openInterface(id) {
+    try {
+      var icon = window.gui.menuBar._icons._childrenList.filter(function (c) {
+        return c.id && c.id.toLowerCase().indexOf(id) !== -1;
+      })[0];
+      if (icon && icon.tap) {
+        icon.tap();
+        return true;
+      }
+    } catch (e) {
+      /* noop */
+    }
+    return false;
+  }
 
   // --- Mouse-wheel zoom (map + world map) ----------------------------------
   function currentWorldMap() {
@@ -122,6 +160,12 @@
               function () {},
               function () {}
             );
+            e.preventDefault();
+            return;
+          }
+
+          // Interface toggles (inventory, spells, characteristics, map, ...).
+          if (IFACE[k] && openInterface(IFACE[k])) {
             e.preventDefault();
             return;
           }
