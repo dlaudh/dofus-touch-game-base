@@ -1,54 +1,36 @@
-/* Desktop layout fixes for the mobile client. No gameplay-affecting styling. */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-}
+/* Style fixes copied from lindo-game-base (fixes.css). The client's own
+   styles-native.css already sizes its containers; these are the only style
+   tweaks Lindo applies. No custom rules. */
 
-/* The client builds body > #resizableBody > #dofusBody > canvas and only
-   recomputes their height on keyboard/visualViewport events, not on window
-   resize — so on desktop the height stays frozen while the width follows.
-   Force the whole chain to fill the window; !important overrides the inline
-   fixed heights the client sets. #resizableBody must be included (it's the
-   wrapper #dofusBody lives in) or the 100% has nothing to fill against. */
-#resizableBody, #dofusBody {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Fullscreen popups (ConfirmPopup/PopupAbstract with fullScreenPopup) are
-   sized/positioned in fixed px by the client, so they don't fill a resized
-   desktop window. Force them to cover it. */
-.fullScreenPopup {
-  left: 0 !important;
-  top: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* The shortcut bar drawer collapses on desktop widths without this. */
 .ShortcutBar .drawerContent {
   min-width: 100% !important;
 }
 
-/* Thin, unobtrusive scrollbars matching the dark UI. */
-::-webkit-scrollbar {
-  width: 10px;
-  background-color: rgba(0, 0, 0, 0);
+body,html{
+  background: black;
 }
+
+/* Turn on custom 8px wide scrollbar */
+::-webkit-scrollbar {
+  width: 10px; /* 1px wider than Lion. */
+  /* This is more usable for users trying to click it. */
+  background-color: rgba(0,0,0,0);
+  -webkit-border-radius: 100px;
+}
+/* hover effect for both scrollbar area, and scrollbar 'thumb' */
 ::-webkit-scrollbar:hover {
   background-color: rgba(0, 0, 0, 0.09);
 }
+
+/* The scrollbar 'thumb' ...that marque oval shape in a scrollbar */
 ::-webkit-scrollbar-thumb:vertical {
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 100px;
+  background: rgba(0,0,0,0.5);
+  -webkit-border-radius: 100px;
   background-clip: padding-box;
   border: 2px solid rgba(0, 0, 0, 0);
-  min-height: 10px;
+  min-height: 10px; /*Prevent it from getting too small */
 }
 ::-webkit-scrollbar-thumb:vertical:active {
-  background: rgba(0, 0, 0, 0.61);
+  background: rgba(0,0,0,0.61); /* Some darker color when you click it */
+  -webkit-border-radius: 100px;
 }
