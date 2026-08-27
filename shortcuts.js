@@ -3,12 +3,18 @@
 // No gameplay automation — just input conveniences a mobile client lacks.
 (function () {
   "use strict";
+  console.log("[dtd] shortcuts.js loaded");
 
-  var boot = setInterval(function () {
-    if (!window.gui || !window.isoEngine) return;
-    clearInterval(boot);
+  // Attach the keyboard listener immediately — each handler checks window.gui
+  // at press time, so it doesn't need to wait for the client to boot. (The
+  // previous "poll for gui/isoEngine then setup" never completed reliably.)
+  setupKeys();
+
+  // Zoom needs the game foreground element; poll until it exists.
+  var z = setInterval(function () {
+    if (!(window.foreground && window.foreground.rootElement)) return;
+    clearInterval(z);
     setupZoom();
-    setupKeys();
     try {
       var ids = window.gui.menuBar._icons._childrenList.map(function (c) {
         return c.id;
@@ -99,7 +105,7 @@
     document.addEventListener(
       "keydown",
       function (e) {
-        if (isTyping(e)) return;
+        if (isTyping(e) || !window.gui || !window.isoEngine) return;
         var g = window.gui;
         var k = (e.key || "").toLowerCase();
         try {
