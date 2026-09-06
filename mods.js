@@ -8,17 +8,10 @@
     "damage-estimator",
     "fight-chronometer",
     "challenge-percent",
-    "vertical-timeline",
     "health-bar",
     // Map / farming
-    "show-resources",
     "harvest-bar",
-    "job-xp",
     // Interface
-    "grip-position-save",
-    "party-info",
-    "rune-lister",
-    "zaap-search-filter",
     "rapid-exchange",
     "chat-history",
     "show-pods",
