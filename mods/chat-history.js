@@ -7,31 +7,31 @@
 (function () {
   "use strict";
 
-  var POLL_INTERVAL = 250; // ms between readiness checks
-  var _input = null;       // the chat <input> DOM element once found
-  var _onKeyDown = null;   // reference kept so we can remove it on destroy
+  var _input = null;     // the chat <input> DOM element once found
+  var _onKeyDown = null; // reference kept so we can remove it on destroy
 
-  // Poll until the game GUI and the chat-input element are available.
-  var _pollTimer = setInterval(function () {
-    try {
-      if (!window.gui || !window.isoEngine) return;
-      var el = window.gui.document
-        ? window.gui.document.getElementsByClassName("inputChat")[0]
-        : null;
-      // Fall back to the page document if the game uses the host document.
-      if (!el) {
-        el = document.getElementsByClassName("inputChat")[0] || null;
-      }
-      if (!el) return;
+  /** The chat input is a DOM element the client builds after boot, so it is a
+   *  readiness condition in its own right, not just a global. */
+  function findChatInput() {
+    var el = window.gui.document
+      ? window.gui.document.getElementsByClassName("inputChat")[0]
+      : null;
+    // Fall back to the page document if the game uses the host document.
+    return el || document.getElementsByClassName("inputChat")[0] || null;
+  }
 
-      clearInterval(_pollTimer);
-      _pollTimer = null;
-      _input = el;
+  var _cancelWait = window.__dtdMod.ready(
+    {
+      mod: "chat-history",
+      need: ["gui", "isoEngine"],
+      until: findChatInput,
+      untilLabel: "the .inputChat element"
+    },
+    function () {
+      _input = findChatInput();
       _init();
-    } catch (e) {
-      // Not ready yet — ignore and retry.
     }
-  }, POLL_INTERVAL);
+  );
 
   function _getHistory() {
     try {
@@ -88,10 +88,7 @@
   // it ever needs to tear down the mod (e.g. on game reload).
   window.__dtdChatHistory = {
     destroy: function () {
-      if (_pollTimer) {
-        clearInterval(_pollTimer);
-        _pollTimer = null;
-      }
+      _cancelWait();
       if (_input && _onKeyDown) {
         _input.removeEventListener("keydown", _onKeyDown, true);
         _onKeyDown = null;

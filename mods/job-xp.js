@@ -76,6 +76,11 @@
   // ---------------------------------------------------------------------------
   var xpPanel = null; // the live HTMLDivElement, or null when absent
 
+  // Single pending rebuild timer, shared by every caller of create().
+  var pendingTimer = null;
+  var pendingTries = 0;
+  var MAX_TRIES = 40; // ~20 s at 500 ms
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -99,6 +104,12 @@
 
   /** Remove the XP panel from the DOM and clear the module reference. */
   function clean() {
+    // Drop any queued rebuild too, or a create() scheduled just before a fight
+    // started would put the panel back up mid-fight.
+    if (pendingTimer !== null) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
     if (xpPanel && xpPanel.parentElement) {
       xpPanel.style.visibility = "";
       xpPanel.innerHTML = "";
@@ -109,15 +120,22 @@
 
   /**
    * Build (or rebuild) the XP panel.
+   *
    * Retries every 500 ms until playerData.jobs.list is available and the first
-   * job entry has an `experience` object (matching the reference client's retry guard).
+   * job entry has an `experience` object. Every call reuses a single pending
+   * timer: create() is driven by JobExperienceUpdateMessage, which fires
+   * constantly while harvesting, and the previous version started an
+   * independent unbounded retry chain per call — so a harvesting session ended
+   * up with many overlapping chains all rebuilding the same panel.
    */
   function create() {
-    setTimeout(function () {
+    if (pendingTimer !== null) clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(function () {
+      pendingTimer = null;
       try {
         var playerData = window.gui && window.gui.playerData;
         if (!playerData || !playerData.jobs || !playerData.jobs.list) {
-          return create(); // not ready yet — retry
+          return retry(); // not ready yet
         }
 
         var jobs = playerData.jobs.list;
@@ -125,9 +143,10 @@
 
         // If there are jobs but the first one has no experience data yet, retry.
         if (jobKeys.length > 0 && !jobs[jobKeys[0]].experience) {
-          return create();
+          return retry();
         }
 
+        pendingTries = 0;
         clean();
 
         var panel = document.createElement("div");
@@ -162,6 +181,16 @@
         console.error("[dtd] job-xp create error", ex);
       }
     }, 500);
+  }
+
+  /** Re-arm the single retry timer, giving up rather than spinning forever. */
+  function retry() {
+    if (++pendingTries > MAX_TRIES) {
+      pendingTries = 0;
+      console.warn("[dtd] job-xp: gave up waiting for job data");
+      return;
+    }
+    create();
   }
 
   // ---------------------------------------------------------------------------
@@ -217,17 +246,8 @@
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Poll until all required client globals are present, then initialise.
-  // ---------------------------------------------------------------------------
-  var pollInterval = setInterval(function () {
-    if (
-      !window.gui ||
-      !window.isoEngine ||
-      !window.dofus ||
-      !window.foreground
-    ) return;
-    clearInterval(pollInterval);
-    init();
-  }, 200);
+  window.__dtdMod.ready(
+    { mod: "job-xp", need: ["gui", "isoEngine", "dofus", "foreground"] },
+    init
+  );
 })();

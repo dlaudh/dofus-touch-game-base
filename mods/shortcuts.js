@@ -1,16 +1,36 @@
+// shortcuts.js
 // Keyboard shortcuts + mouse-wheel zoom for desktop, mirroring the reference
 // client's approach (all through the client's own window.gui / window.isoEngine APIs).
 // No gameplay automation — just input conveniences a mobile client lacks.
+// Depends on the map-mover helper (window.__dtdMapMover) for arrow-key map changes.
 (function () {
   "use strict";
-  console.log("[dtd] shortcuts.js loaded");
 
-  // Attach the keyboard + wheel listeners immediately — each handler checks the
-  // client globals at event time, so they don't need to wait for the client to
-  // boot. (A previous "poll then setup" approach never completed reliably.)
-  setupKeys();
-  setupZoom();
-  console.log("[dtd] shortcuts + zoom active");
+  // Desktop input only. On a touch host (the Android build) there is no
+  // physical keyboard and no wheel, so these bindings have nothing to bind to
+  // and would only compete with the client's own native mobile input. Bail
+  // instead of relying on the host to exclude this file from its bundle.
+  if (!window.__dtdMod.isDesktopInput()) {
+    console.log("[dtd] mod shortcuts skipped (no desktop input)");
+    return;
+  }
+
+  // No globals to wait for: both handlers check window.gui / window.isoEngine at
+  // event time, so they attach immediately. (A previous "poll then setup"
+  // approach never completed reliably.) Going through ready() anyway is what
+  // puts the mod in the registry a settings UI reads.
+  window.__dtdMod.ready({ mod: "shortcuts", need: [] }, function () {
+    var detachKeys = setupKeys();
+    var detachZoom = setupZoom();
+    console.log("[dtd] mod shortcuts active");
+
+    // Returning a teardown makes this mod switchable without a reload.
+    return function () {
+      detachKeys();
+      detachZoom();
+      console.log("[dtd] mod shortcuts stopped");
+    };
+  });
 
   // Interface key -> menu-bar icon CSS class (the icons carry classes like
   // "menuIconBag", "menuIconSpell", ...). Matched against each icon's
@@ -44,42 +64,75 @@
   }
 
   // --- Mouse-wheel zoom (map + world map) ----------------------------------
+  // The wheel only zooms when the pointer is actually over the map (or over the
+  // world map when it is open). Over any client UI — chat, inventory, a window
+  // list — the wheel is left alone so the panel can scroll itself.
   function currentWorldMap() {
     try {
-      var w = window.gui.windowsContainer.getChildren().find(function (c) {
-        return c.id === "worldMap";
-      });
-      return w && w.isVisible && w.isVisible() ? w._worldMap : null;
+      var w = window.__dtdMod.findWindow("worldMap");
+      if (!w || !w.isVisible || !w.isVisible()) return null;
+      return { map: w._worldMap, root: w.rootElement };
     } catch (e) {
       return null;
     }
   }
 
+  function inside(root, node) {
+    return !!root && !!node && (root === node || root.contains(node));
+  }
+
+  // True when the wheel landed on the isometric map: the map canvas itself, the
+  // transparent overlay layer the client (and our mods) draw on top of it, or
+  // the bare page backdrop — but never on a client UI element.
+  var BACKDROP_IDS = { dofusBody: 1, resizableBody: 1, foreground: 1 };
+  function overMap(target) {
+    if (!target || target.nodeType !== 1) return false;
+    var scene = window.isoEngine.mapScene;
+    if (inside(scene && scene.canvas, target)) return true;
+    // Foreground overlays (health bars, damage estimator) are pointer-events:none,
+    // so a hit inside the foreground root means empty map space.
+    if (inside(window.foreground && window.foreground.rootElement, target)) return true;
+    return (
+      target === document.body ||
+      target === document.documentElement ||
+      BACKDROP_IDS[target.id] === 1
+    );
+  }
+
   function setupZoom() {
     // Attach to the document (capture) so it works regardless of when the game
     // foreground element appears; guard the client globals at wheel time.
-    document.addEventListener(
-      "wheel",
-      function (e) {
+    var onWheel = function (e) {
         if (!window.isoEngine || !window.gui) return;
         try {
           var factor = 1 + -e.deltaY / 600;
-          var wm = currentWorldMap();
-          if (wm) {
+          var wmw = currentWorldMap();
+          if (wmw && wmw.map) {
+            var wm = wmw.map;
+            var canvas = wm._scene && wm._scene.canvas;
+            // Zoom only over the world map's own canvas (or, if it exposes
+            // none, anywhere inside the world-map window).
+            if (!inside(canvas || wmw.root, e.target)) return;
+            var rect = (canvas || wmw.root).getBoundingClientRect();
+            var px = e.clientX - rect.left;
+            var py = e.clientY - rect.top;
             var pz = wm._scene.camera.zoomTarget;
             wm._scene.camera.zoomTo(wm._scene.camera.zoom * factor);
             var dz = wm._scene.camera.zoomTarget / pz;
-            wm._scene.move(0, 0, e.layerX * (dz - 1), e.layerY * (dz - 1), 1);
+            wm._scene.move(0, 0, px * (dz - 1), py * (dz - 1), 1);
             wm._loadChunksInView && wm._loadChunksInView();
-          } else if (window.isoEngine.mapScene) {
+          } else if (window.isoEngine.mapScene && overMap(e.target)) {
             window.isoEngine.mapScene.camera.zoomTo(window.isoEngine.mapScene.camera.zoom * factor);
           }
         } catch (err) {
           /* noop */
         }
-      },
-      { passive: true, capture: true }
-    );
+    };
+    var options = { passive: true, capture: true };
+    document.addEventListener("wheel", onWheel, options);
+    return function () {
+      document.removeEventListener("wheel", onWheel, options);
+    };
   }
 
   // --- Keyboard shortcuts ---------------------------------------------------
@@ -89,9 +142,7 @@
   }
 
   function setupKeys() {
-    document.addEventListener(
-      "keydown",
-      function (e) {
+    var onKeyDown = function (e) {
         if (isTyping(e) || !window.gui || !window.isoEngine) return;
         var g = window.gui;
         var k = (e.key || "").toLowerCase();
@@ -132,9 +183,11 @@
             return;
           }
 
-          // Digit 1-8: spell slot; Shift+Digit 1-8: item slot.
+          // Digit 1-8: spell slot; Shift+Digit 1-8: item slot. Skipped while the
+          // on-screen number pad is open — there the digits are typed input
+          // (see mods/keyboard-input-pad.js), not spell shortcuts.
           var m = /^Digit([1-8])$/.exec(e.code || "");
-          if (m) {
+          if (m && !(g.numberInputPad && g.numberInputPad.isVisible())) {
             var idx = parseInt(m[1], 10) - 1;
             var panel = e.shiftKey ? "item" : "spell";
             var slot = g.shortcutBar._panels[panel].slotList[idx];
@@ -145,10 +198,10 @@
             return;
           }
 
-          // Arrow keys: change to the neighbouring map (via the ported mover).
+          // Arrow keys: change to the neighbouring map (via the map-mover helper).
           var dir = { arrowup: "top", arrowdown: "bottom", arrowleft: "left", arrowright: "right" }[k];
-          if (dir && window.__dtdMover) {
-            window.__dtdMover.move(
+          if (dir && window.__dtdMapMover) {
+            window.__dtdMapMover.move(
               dir,
               function () {},
               function () {}
@@ -165,8 +218,10 @@
         } catch (err) {
           /* noop */
         }
-      },
-      true
-    );
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return function () {
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
   }
 })();

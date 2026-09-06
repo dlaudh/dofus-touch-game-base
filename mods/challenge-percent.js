@@ -7,24 +7,13 @@
 (function () {
   "use strict";
 
-  var POLL_INTERVAL = 250; // ms between readiness checks
   var stylesheet = null;
   var challengeListener = null;
 
-  // -------------------------------------------------------------------------
-  // Readiness poll — wait for the game globals that this mod depends on.
-  // -------------------------------------------------------------------------
-  var pollTimer = setInterval(function () {
-    if (
-      typeof window.gui === "undefined" ||
-      typeof window.isoEngine === "undefined" ||
-      typeof window.dofus === "undefined"
-    ) {
-      return;
-    }
-    clearInterval(pollTimer);
-    init();
-  }, POLL_INTERVAL);
+  window.__dtdMod.ready(
+    { mod: "challenge-percent", need: ["gui", "isoEngine", "dofus"] },
+    init
+  );
 
   // -------------------------------------------------------------------------
   // init — called once the client globals are ready.
@@ -75,18 +64,26 @@
     // Listen for challenge info messages and append the XP bonus label.
     challengeListener = function (msg) {
       try {
-        var challengeText = document.createElement("div");
-        challengeText.className = "challPercentOnIconDetails";
-        challengeText.innerHTML = "+" + msg.xpBonus + "%";
+        if (!msg || msg.xpBonus == null) return; // nothing to show
 
         var iconDetails =
           window.gui.challengeIndicator &&
           window.gui.challengeIndicator.iconDetailsListByChallengeId &&
           window.gui.challengeIndicator.iconDetailsListByChallengeId[msg.challengeId];
 
-        if (iconDetails && iconDetails.icon && iconDetails.icon.rootElement) {
-          iconDetails.icon.rootElement.appendChild(challengeText);
+        var root = iconDetails && iconDetails.icon && iconDetails.icon.rootElement;
+        if (!root) return;
+
+        // Reuse the label if this challenge already has one. Appending a fresh
+        // div per message stacked duplicate "+N%" texts on the same icon
+        // whenever the server re-sent ChallengeInfoMessage.
+        var label = root.querySelector(".challPercentOnIconDetails");
+        if (!label) {
+          label = document.createElement("div");
+          label.className = "challPercentOnIconDetails";
+          root.appendChild(label);
         }
+        label.textContent = "+" + msg.xpBonus + "%";
       } catch (e) {
         console.warn("[dtd] challenge-percent: ChallengeInfoMessage handler error", e);
       }

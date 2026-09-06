@@ -8,24 +8,12 @@
 (function () {
   "use strict";
 
-  var POLL_INTERVAL = 200; // ms between ready-checks
   var UPDATE_INTERVAL = 200; // ms between bar-width updates
 
-  var pollTimer = setInterval(function () {
-    if (
-      typeof window.gui === "undefined" ||
-      typeof window.isoEngine === "undefined" ||
-      typeof window.dofus === "undefined"
-    ) {
-      return;
-    }
-    clearInterval(pollTimer);
-    try {
-      init();
-    } catch (e) {
-      console.error("[dtd] harvest-bar init error", e);
-    }
-  }, POLL_INTERVAL);
+  window.__dtdMod.ready(
+    { mod: "harvest-bar", need: ["gui", "isoEngine", "dofus", "foreground"] },
+    init
+  );
 
   // -------------------------------------------------------------------------
   // HarvestBar — the DOM widget that tracks one harvest action
@@ -39,6 +27,7 @@
     this.cellId = 0;
     this.duration = 0;
     this.remainingTime = 0;
+    this._unsubscribeCamera = null;
   }
 
   HarvestBar.prototype._createContainer = function () {
@@ -52,17 +41,11 @@
     this._createContainer();
 
     try {
-      var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(this.cellId);
-      var pos = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
-
       /* progress bar */
       this.barEl = document.createElement("div");
       this.barEl.id = "harvestBar";
       this.barEl.className = "harvestBar";
       this.container.appendChild(this.barEl);
-
-      this.container.style.left = (pos.x - this.container.offsetWidth / 2) + "px";
-      this.container.style.top = pos.y + "px";
 
       /* time label */
       this.timeEl = document.createElement("div");
@@ -70,13 +53,44 @@
       this.timeEl.className = "harvestTimeText";
       window.foreground.rootElement.appendChild(this.timeEl);
 
-      this.timeEl.style.left = (pos.x - this.container.offsetWidth / 2) + "px";
-      this.timeEl.style.top = pos.y + "px";
+      this.updatePosition();
+
+      // The bar is pinned to a cell's canvas coordinates, so it has to follow
+      // the camera; without this it stays put as soon as the player zooms.
+      if (window.__dtdCameraWatch) {
+        var self = this;
+        this._unsubscribeCamera = window.__dtdCameraWatch.subscribe(function () {
+          self.updatePosition(true);
+        });
+      }
     } catch (e) {
       console.error("[dtd] harvest-bar _createBar error", e);
     }
 
     this._update();
+  };
+
+  /**
+   * Pin the bar over its cell using the current camera. `immediate` skips the
+   * CSS transition, which is there for the initial fade-in and would otherwise
+   * make the bar lag behind every zoom.
+   */
+  HarvestBar.prototype.updatePosition = function (immediate) {
+    if (!this.container || !this.timeEl) return;
+    try {
+      var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(this.cellId);
+      var pos = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
+      var left = (pos.x - this.container.offsetWidth / 2) + "px";
+      var duration = immediate ? "0s" : "";
+      this.container.style.transitionDuration = duration;
+      this.timeEl.style.transitionDuration = duration;
+      this.container.style.left = left;
+      this.container.style.top = pos.y + "px";
+      this.timeEl.style.left = left;
+      this.timeEl.style.top = pos.y + "px";
+    } catch (e) {
+      console.error("[dtd] harvest-bar position error", e);
+    }
   };
 
   HarvestBar.prototype._update = function () {
@@ -94,6 +108,10 @@
     this.updateTimer = setInterval(function () {
       self.remainingTime -= self.interval;
       self._update();
+      if (self.remainingTime <= 0) {
+        clearInterval(self.updateTimer);
+        self.updateTimer = null;
+      }
     }, this.interval);
   };
 
@@ -107,6 +125,10 @@
   HarvestBar.prototype.destroy = function () {
     clearInterval(this.updateTimer);
     this.updateTimer = null;
+    if (this._unsubscribeCamera) {
+      this._unsubscribeCamera();
+      this._unsubscribeCamera = null;
+    }
     if (this.container && this.container.parentElement) {
       this.container.parentElement.removeChild(this.container);
     }
@@ -181,11 +203,16 @@
           e.entityId === window.isoEngine.actorManager.userId
         ) {
           harvestBar.harvestStarted(statedElements.get(e.elemId), e.duration);
-          statedElements.clear();
         }
       } catch (ex) {
         console.error("[dtd] harvest-bar InteractiveUsedMessage", ex);
       }
+    });
+
+    // Element ids are scoped to the current map: drop them on a map change
+    // rather than after a single harvest.
+    cm.on("MapComplementaryInformationsDataMessage", function () {
+      statedElements.clear();
     });
 
     // InteractiveUseEndedMessage: remove bar when harvest finishes/is cancelled

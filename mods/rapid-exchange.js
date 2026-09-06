@@ -7,19 +7,10 @@
 (function () {
   "use strict";
 
-  // ------------------------------------------------------------------
-  // Poll until the client globals are ready, then initialise once.
-  // ------------------------------------------------------------------
-  var _poll = setInterval(function () {
-    try {
-      if (window.gui && window.isoEngine && window.dofus) {
-        clearInterval(_poll);
-        init();
-      }
-    } catch (e) {
-      /* keep polling */
-    }
-  }, 300);
+  window.__dtdMod.ready(
+    { mod: "rapid-exchange", need: ["gui", "isoEngine", "dofus"] },
+    init
+  );
 
   // ------------------------------------------------------------------
   // State
@@ -30,13 +21,7 @@
   // Helper: find a window by id inside windowsContainer
   // ------------------------------------------------------------------
   function getWindow(id) {
-    try {
-      var children = window.gui.windowsContainer.getChildren();
-      for (var i = 0; i < children.length; i++) {
-        if (children[i].id === id) return children[i];
-      }
-    } catch (e) { /* noop */ }
-    return undefined;
+    return window.__dtdMod.findWindow(id) || undefined;
   }
 
   // ------------------------------------------------------------------
@@ -63,11 +48,11 @@
           var container = win.id === 'tradeWithPlayer' ? win._myTradeSpace : win;
           if (!container) break;
           var list = container._childrenList;
-          for (var i in list) {
-            if (
-              list[i].rootElement &&
-              list[i].rootElement.className === 'minMaxSelector'
-            ) {
+          for (var i = 0; i < list.length; i++) {
+            var el = list[i].rootElement;
+            // classList, not an exact className match: the client adding any
+            // second class to the selector would break the comparison.
+            if (el && el.classList && el.classList.contains('minMaxSelector')) {
               if (typeof list[i].hide === 'function') list[i].hide();
             }
           }
@@ -106,6 +91,12 @@
     window.addEventListener('keyup', function (e) {
       if (e.key === 'Meta' || e.key === 'Control') keyPressed = false;
     }, true);
+    // A keyup that lands in another window never reaches us, so switching apps
+    // with Cmd/Ctrl held would leave the modifier stuck on and make the next
+    // double-tap silently move a whole stack.
+    window.addEventListener('blur', function () {
+      keyPressed = false;
+    });
   }
 
   // ------------------------------------------------------------------

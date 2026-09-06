@@ -7,8 +7,6 @@
 (function () {
   "use strict";
 
-  var POLL_INTERVAL = 200; // ms between readiness checks
-
   function init() {
     document.addEventListener("keydown", onKeyDown, true);
     console.log("[dtd] mod keyboard-input-pad active");
@@ -51,15 +49,5 @@
     }
   }
 
-  // Poll until the game client globals are ready, then install the listener.
-  var pollTimer = setInterval(function () {
-    try {
-      if (window.gui && window.isoEngine) {
-        clearInterval(pollTimer);
-        init();
-      }
-    } catch (e) {
-      /* noop */
-    }
-  }, POLL_INTERVAL);
+  window.__dtdMod.ready({ mod: "keyboard-input-pad", need: ["gui", "isoEngine"] }, init);
 })();

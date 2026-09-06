@@ -10,30 +10,10 @@
 (function () {
   "use strict";
 
-  // ---------------------------------------------------------------------------
-  // Poll until client globals are ready, then init
-  // ---------------------------------------------------------------------------
-  var POLL_INTERVAL = 300;
-  var MAX_ATTEMPTS = 300; // ~90 s
-
-  function isReady() {
-    return window.gui && window.isoEngine && window.dofus && window.foreground;
-  }
-
-  var attempts = 0;
-  function poll() {
-    if (isReady()) {
-      init();
-    } else {
-      attempts++;
-      if (attempts < MAX_ATTEMPTS) {
-        setTimeout(poll, POLL_INTERVAL);
-      } else {
-        console.warn("[dtd] show-resources: timed out waiting for client globals");
-      }
-    }
-  }
-  poll();
+  window.__dtdMod.ready(
+    { mod: "show-resources", need: ["gui", "isoEngine", "dofus", "foreground"] },
+    init
+  );
 
   // ---------------------------------------------------------------------------
   // State enum (mirrors resources.ts)
@@ -43,7 +23,13 @@
   // ---------------------------------------------------------------------------
   // iconIdByTypeId — Ankama CDN icon IDs keyed by interactive-element typeId
   // ---------------------------------------------------------------------------
-  var ICON_CDN = "https://dofustouch.cdn.ankama.com/assets/2.34.8_kbu_6h45kmUJaqYJSzE(uwaos..pYYKs/gfx/items/";
+  // Built from the assetsUrl the bootstrap read out of Ankama's config.json.
+  // A hardcoded CDN path pins one assets release and 404s every icon the day
+  // Ankama rotates it; job-xp already resolves its icons the same way.
+  function iconBase() {
+    var url = (window.Config && window.Config.assetsUrl) || "";
+    return url.replace(/\/+$/, "") + "/gfx/items/";
+  }
 
   var iconIdByTypeId = {
     // General
@@ -168,13 +154,14 @@
   Resources.prototype.getIcons = function () {
     var iconId = iconIdByTypeId[this.typeId];
     var result = [];
+    var base = iconBase();
     if (iconId === undefined) {
       result.push("./assets/ui/icons/fail.png");
     } else if (typeof iconId === "string") {
-      result.push(ICON_CDN + iconId + ".png");
+      result.push(base + iconId + ".png");
     } else {
       for (var i = 0; i < iconId.length; i++) {
-        result.push(ICON_CDN + iconId[i] + ".png");
+        result.push(base + iconId[i] + ".png");
       }
     }
     return result;
@@ -278,6 +265,9 @@
     setTimeout(function () {
       var typeId = self._elemIdToTypeId[statedElement.elementId];
       if (typeId === undefined) return;
+      // Elements in ressourcesToSkip are indexed by id but never tracked in
+      // _data — not an error, just nothing to update.
+      if (!self._data[typeId]) return;
 
       try {
         self._data[typeId].addOrUpdateResource({
@@ -333,13 +323,18 @@
     if (box.innerHTML !== "") {
       try {
         window.foreground.rootElement.appendChild(box);
-        var boxWidth = box.offsetWidth / 2;
-        box.style.left = "calc(50% - " + boxWidth + "px)";
         this._resourcesBox = box;
+        this._centerDom();
       } catch (e) {
         console.warn("[dtd] show-resources: could not append resourcesBox", e);
       }
     }
+  };
+
+  ShowResourcesMod.prototype._centerDom = function () {
+    if (!this._resourcesBox) return;
+    var half = this._resourcesBox.offsetWidth / 2;
+    this._resourcesBox.style.left = "calc(50% - " + half + "px)";
   };
 
   ShowResourcesMod.prototype._removeDom = function () {
@@ -424,6 +419,9 @@
     };
     this._on(window.dofus.connectionManager, "GameFightLeaveMessage", onFightEnd);
     this._on(window.dofus.connectionManager, "GameFightEndMessage", onFightEnd);
+
+    // Keep the bar centred when the window changes shape (desktop resizes a lot).
+    this._on(window.gui, "resize", function () { self._centerDom(); });
   };
 
   ShowResourcesMod.prototype.start = function () {

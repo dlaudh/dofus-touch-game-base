@@ -15,37 +15,14 @@
 (function () {
   "use strict";
 
-  // ---------------------------------------------------------------------------
-  // Boot poll — wait for all required client globals before doing anything.
-  // ---------------------------------------------------------------------------
-  var POLL_INTERVAL = 300;
-  var MAX_ATTEMPTS = 300; // ~90 s
-
-  function isReady() {
-    return window.gui && window.isoEngine && window.dofus;
-  }
-
-  var attempts = 0;
-  function poll() {
-    if (isReady()) {
-      try {
-        initPartyInfo();
-        initPartyMemberOnMap();
-        console.log("[dtd] mod party-info active");
-      } catch (e) {
-        console.error("[dtd] party-info init error", e);
-      }
-    } else {
-      attempts++;
-      if (attempts < MAX_ATTEMPTS) {
-        setTimeout(poll, POLL_INTERVAL);
-      } else {
-        console.warn("[dtd] party-info: timed out waiting for client globals");
-      }
+  window.__dtdMod.ready(
+    { mod: "party-info", need: ["gui", "isoEngine", "dofus"] },
+    function () {
+      initPartyInfo();
+      initPartyMemberOnMap();
+      console.log("[dtd] mod party-info active");
     }
-  }
-
-  poll();
+  );
 
   // ===========================================================================
   // PART 1 — PartyInfo: combined level + prospecting counter
@@ -212,28 +189,45 @@
       if (divMember == null) return;
       var className = memberStatus ? "pmomOnMap" : "pmomNotInMap";
       var divStatus = divMember.lastElementChild;
-      if (divStatus && divStatus.classList.contains("pmomStatus")) {
-        // Replace second class (the on/off class) in place
-        var current = divStatus.classList.item(1);
-        if (current) divStatus.classList.replace(current, className);
-        else divStatus.classList.add(className);
-      } else {
+      if (!divStatus || !divStatus.classList.contains("pmomStatus")) {
         divStatus = document.createElement("div");
         divStatus.className = "pmomStatus";
-        divStatus.classList.add(className);
         divMember.appendChild(divStatus);
       }
+      // Toggle the two known state classes by name. Addressing them by index
+      // (classList.item(1)) breaks as soon as anything else adds a class.
+      divStatus.classList.remove("pmomOnMap", "pmomNotInMap");
+      divStatus.classList.add(className);
+    }
+
+    /**
+     * The DOM box for one party member. Resolved through the party component
+     * that owns the member, so the dot always lands on the right portrait —
+     * indexing document.getElementsByClassName("member") assumed both that the
+     * Map's insertion order matched document order and that the local player
+     * occupied the first slot.
+     */
+    function memberElement(memberId) {
+      var currentParty = window.gui.party.currentParty;
+      if (!currentParty) return null;
+      var children = currentParty._childrenList;
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (child.memberData && child.memberData.id === memberId) {
+          var el = child.rootElement;
+          if (!el) return null;
+          return el.classList && el.classList.contains("member")
+            ? el
+            : el.querySelector(".member") || el;
+        }
+      }
+      return null;
     }
 
     function updateDOM() {
-      var i = 0;
       members.forEach(function (status, memberId) {
-        if (memberId !== window.isoEngine.actorManager.userId) {
-          var memberEls = document.getElementsByClassName("member");
-          var divMember = memberEls[i];
-          addStatusToMember(divMember, status);
-        }
-        i++;
+        if (memberId === window.isoEngine.actorManager.userId) return;
+        addStatusToMember(memberElement(memberId), status);
       });
     }
 

@@ -8,35 +8,22 @@
 (function () {
   "use strict";
 
-  // -------------------------------------------------------------------------
-  // Poll until client globals are ready, then initialise once.
-  // -------------------------------------------------------------------------
-  var POLL_INTERVAL = 300;
-  var MAX_ATTEMPTS = 300; // ~90 s
-  var attempts = 0;
-
-  function isReady() {
-    return window.gui && window.isoEngine;
+  /** The equipment window is built during boot, some way after window.gui
+   *  exists — waiting only on the globals meant init() ran too early, logged
+   *  "equipment window not found", and left the mod permanently dead. */
+  function findEquipmentWindow() {
+    return window.__dtdMod.findWindow("equipment");
   }
 
-  function poll() {
-    if (isReady()) {
-      try {
-        init();
-      } catch (e) {
-        console.error("[dtd] show-pods: init error", e);
-      }
-    } else {
-      attempts++;
-      if (attempts < MAX_ATTEMPTS) {
-        setTimeout(poll, POLL_INTERVAL);
-      } else {
-        console.warn("[dtd] show-pods: timed out waiting for client globals");
-      }
-    }
-  }
-
-  poll();
+  window.__dtdMod.ready(
+    {
+      mod: "show-pods",
+      need: ["gui", "isoEngine", "dofus"],
+      until: findEquipmentWindow,
+      untilLabel: "the equipment window"
+    },
+    init
+  );
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -151,21 +138,7 @@
   // -------------------------------------------------------------------------
 
   function init() {
-    // Locate the equipment window in the GUI container.
-    var equipmentWindow = null;
-    try {
-      var children = window.gui.windowsContainer.getChildren();
-      for (var i = 0; i < children.length; i++) {
-        if (children[i].id === "equipment") {
-          equipmentWindow = children[i];
-          break;
-        }
-      }
-    } catch (e) {
-      console.error("[dtd] show-pods: could not access windowsContainer", e);
-      return;
-    }
-
+    var equipmentWindow = findEquipmentWindow();
     if (!equipmentWindow) {
       console.warn("[dtd] show-pods: equipment window not found in windowsContainer");
       return;

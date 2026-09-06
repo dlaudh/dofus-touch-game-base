@@ -5,7 +5,6 @@
 (function () {
   "use strict";
 
-  var POLL_INTERVAL = 300;
   var FRAGMENT_GID = 8378;
   var RUNE_TYPE_ID = 78;
 
@@ -32,6 +31,27 @@
     return obj ? obj.quantity : 0;
   }
 
+  /**
+   * Display name for an item, falling back to the GID. The port logged the raw
+   * objectGID, so the chat line read "+3 7508" instead of naming the rune; the
+   * client exposes the resolved name in more than one shape depending on build,
+   * so try each and only fall back to the id when none is present.
+   */
+  function getItemLabel(uid) {
+    var obj = getObjectEntry(uid);
+    if (!obj) return null;
+    try {
+      if (typeof obj.getName === "function") {
+        var name = obj.getName();
+        if (name) return name;
+      }
+    } catch (e) { /* fall through */ }
+    if (obj.item && typeof obj.item.nameId === "string" && obj.item.nameId) {
+      return obj.item.nameId;
+    }
+    return obj.objectGID != null ? String(obj.objectGID) : null;
+  }
+
   function itsARune(uid) {
     try {
       var obj = getObjectEntry(uid);
@@ -43,28 +63,48 @@
 
   // ---- core logic -----------------------------------------------------------
 
+  var flushTimer = null;
+
+  /** Flush the batch even if InventoryWeightMessage never arrives, so a stalled
+   *  batch can't bleed into the next fragment the player cracks. */
+  function armFlushTimeout() {
+    if (flushTimer !== null) clearTimeout(flushTimer);
+    flushTimer = setTimeout(function () {
+      flushTimer = null;
+      if (openedRune) showAllMessages();
+    }, 5000);
+  }
+
   function checkMagicFragment(uid) {
     var item = getObjectEntry(uid);
     if (!item) return;
-    if (item.objectGID === FRAGMENT_GID) openedRune = true;
+    if (item.objectGID === FRAGMENT_GID) {
+      openedRune = true;
+      armFlushTimeout();
+    }
   }
 
   function addObjectQuantity(uid, newQuantity) {
     if (!itsARune(uid)) return;
-    var gid = getGidFromUid(uid);
     var delta = newQuantity - getQuantityFromUid(uid);
-    messageItems.push({ name: gid, quantity: delta });
+    if (delta === 0) return; // nothing changed — the client already applied it
+    messageItems.push({ label: getItemLabel(uid), quantity: delta });
   }
 
   function showAllMessages() {
     openedRune = false;
+    if (flushTimer !== null) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
     if (messageItems.length === 0) {
       messageItems = [];
       return;
     }
     var lines = [];
     messageItems.forEach(function (mi) {
-      lines.push("+" + mi.quantity + " " + mi.name);
+      var sign = mi.quantity > 0 ? "+" : "";
+      lines.push(sign + mi.quantity + " " + (mi.label || "?"));
     });
     try {
       window.gui.chat.logMsg(lines.join("\n"));
@@ -114,10 +154,5 @@
     }
   }
 
-  var _poll = setInterval(function () {
-    if (window.gui && window.isoEngine && window.dofus) {
-      clearInterval(_poll);
-      init();
-    }
-  }, POLL_INTERVAL);
+  window.__dtdMod.ready({ mod: "rune-lister", need: ["gui", "isoEngine", "dofus"] }, init);
 })();

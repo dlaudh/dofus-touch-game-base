@@ -31,9 +31,12 @@ client **locally**.
 - `fixes.js` / `fixes.css` — runtime + style fixes applied after the client loads
   (mouse→touch, window-shape layout, black-bar/zoom fixes, popup sizing)
 - `patches.json` — regex transforms applied to the downloaded client bundle
-- `shortcuts.js` — desktop keyboard shortcuts + mouse-wheel zoom
-- `mover.js` — A* pathfinder helper
-- `mods.js` + `mods/*.js` — quality-of-life mods (always on)
+- `mods.js` + `mods/*.js` — quality-of-life mods (always on). Notably
+  `mods/shortcuts.js` (desktop keyboard shortcuts + mouse-wheel zoom, inert on
+  touch-only hosts)
+- `mods/helpers/*.js` — shared code the mods depend on, loaded before them:
+  `camera-watch.js` (tells map-anchored overlays when the camera moves) and
+  `map-mover.js` (A* pathfinder + map-edge navigation)
 - `keymaster.js` — keyboard-dep stub
 
 ## Patches are version-fragile

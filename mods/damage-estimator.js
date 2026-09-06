@@ -25,6 +25,16 @@
 
   var ESTIMATOR_CONTAINER_ID = "estimatorContainer";
 
+  // Unhandled effects are reported once each. This runs per fighter per spell
+  // selection, so logging every time floods the console while hovering a
+  // spell bar.
+  var reportedEffects = {};
+  function warnUnhandledEffect(effectId) {
+    if (reportedEffects[effectId]) return;
+    reportedEffects[effectId] = true;
+    console.info("[dtd] damage-estimator: effectId not handled: " + effectId);
+  }
+
   // Valid effect IDs this estimator handles
   var VALID_EFFECT_IDS = [96, 91, 100, 97, 92, 98, 93, 99, 94, 82, 108, 1109, 672];
 
@@ -298,7 +308,7 @@
         );
       }
       default:
-        console.info("damage-estimator: effectId not handled: " + effectId);
+        warnUnhandledEffect(effectId);
         return 0;
     }
   };
@@ -383,10 +393,6 @@
     var actor = this._getActor();
     if (!this._isActorVisible(actor)) return;
 
-    var cellId   = actor.data.disposition.cellId;
-    var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(cellId);
-    var pos      = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
-
     // Re-use or create container
     var existing = document.getElementById(ESTIMATOR_CONTAINER_ID + this.actorId);
     if (existing) {
@@ -440,6 +446,17 @@
     }
 
     document.getElementById("damage-estimator").appendChild(this.estimatorContainer);
+    this.updatePosition();
+  };
+
+  /** Pin the overlay over its actor's cell using the current camera. */
+  Estimator.prototype.updatePosition = function () {
+    if (!this.estimatorContainer) return;
+    var actor = this._getActor();
+    var cellId = actor && actor.data && actor.data.disposition && actor.data.disposition.cellId;
+    if (!cellId) return;
+    var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(cellId);
+    var pos = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
     this.estimatorContainer.style.left =
       pos.x - this.estimatorContainer.clientWidth / 2 + "px";
     this.estimatorContainer.style.top = pos.y - 80 + "px";
@@ -461,20 +478,14 @@
       return;
     }
 
-    var cellId   = actor.data.disposition.cellId;
-    if (cellId) {
-      var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(cellId);
-      var pos      = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
-      this.estimatorContainer.style.left =
-        pos.x - this.estimatorContainer.clientWidth / 2 + "px";
-      this.estimatorContainer.style.top = pos.y - 80 + "px";
-    }
+    this.updatePosition();
   };
 
   Estimator.prototype.destroy = function () {
     if (this.estimatorContainer && this.estimatorContainer.parentElement) {
       this.estimatorContainer.parentElement.removeChild(this.estimatorContainer);
     }
+    this.estimatorContainer = null;
   };
 
   // ---------------------------------------------------------------------------
@@ -553,6 +564,18 @@
     }
   };
 
+  /** Re-run each live estimator's positioning against the current camera. */
+  DamageContainer.prototype.reposition = function () {
+    for (var fighterId in this.estimators) {
+      var estimator = this.estimators[fighterId];
+      if (estimator && typeof estimator.updatePosition === "function") {
+        try {
+          estimator.updatePosition();
+        } catch (e) { /* noop */ }
+      }
+    }
+  };
+
   DamageContainer.prototype.destroyEstimators = function () {
     this.estimators = {};
     this.container.innerHTML = "";
@@ -580,10 +603,9 @@
   // ---------------------------------------------------------------------------
   // Mod bootstrap — poll until client globals are ready, then wire up events
   // ---------------------------------------------------------------------------
-  var pollInterval = setInterval(function () {
-    if (!window.gui || !window.isoEngine || !window.foreground) return;
-    clearInterval(pollInterval);
-
+  window.__dtdMod.ready(
+    { mod: "damage-estimator", need: ["gui", "isoEngine", "dofus", "foreground"] },
+    function () {
     try {
       var damageContainer = new DamageContainer();
 
@@ -600,24 +622,42 @@
       // When a spell slot is deselected, clear all estimates
       window.gui.on("spellSlotDeselected", function () {
         try {
-          console.info("damage-estimator: onSpellSlotDeselected");
           damageContainer.destroyEstimators();
         } catch (e) {
           console.error("damage-estimator: spellSlotDeselected error", e);
         }
       });
 
-      // Optional: clean up when the fight ends
-      // (GameFightEndMessage via connectionManager — uncomment if dofus global is present)
-      // if (window.dofus && window.dofus.connectionManager) {
-      //   window.dofus.connectionManager.on("GameFightEndMessage", function () {
-      //     try { damageContainer.fightEnded(); } catch (e) { /* noop */ }
-      //   });
-      // }
+      // Tear the estimators down when the fight is over. window.dofus is present
+      // by now (every other combat mod waits on the same global), and without
+      // this the overlays stay attached after the fight ends.
+      if (window.dofus && window.dofus.connectionManager) {
+        var onFightOver = function () {
+          try {
+            damageContainer.fightEnded();
+          } catch (e) {
+            console.error("[dtd] damage-estimator: fight cleanup error", e);
+          }
+        };
+        window.dofus.connectionManager.on("GameFightEndMessage", onFightOver);
+        window.dofus.connectionManager.on("GameFightLeaveMessage", onFightOver);
+      }
+
+      // Overlays are pinned to a cell's canvas coordinates, so they drift the
+      // moment the camera zooms or pans until something else redraws them.
+      if (window.__dtdCameraWatch) {
+        window.__dtdCameraWatch.subscribe(function () {
+          if (!damageContainer.displayed) return;
+          try {
+            damageContainer.reposition();
+          } catch (e) { /* noop */ }
+        });
+      }
 
       console.log("[dtd] mod damage-estimator active");
     } catch (e) {
       console.error("[dtd] mod damage-estimator failed to initialize", e);
     }
-  }, 200);
+    }
+  );
 })();

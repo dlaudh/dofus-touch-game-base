@@ -1,14 +1,17 @@
 /**
- * mover.js — faithful port of the reference client's Mover + PathFinder (A*) + supporting classes.
+ * map-mover.js — faithful port of the reference client's Mover + PathFinder (A*) + supporting classes.
  * Source: packages/renderer/src/mods/shortcuts/mover.ts
  *         packages/renderer/src/mods/helpers/path-finder/path-finder.ts
  *         packages/renderer/src/mods/helpers/path-finder/cell-path-candidate.ts
  *         packages/renderer/src/mods/helpers/path-finder/cell-path-data.ts
  *
- * Exposes: window.__dtdMover = { move(direction, success, fail) }
+ * Exposes: window.__dtdMapMover = { move(direction, success, fail) }
  * direction: "top" | "bottom" | "left" | "right"
  * success: () => void   — called after the map change settles
  * fail: (reason: string) => void
+ *
+ * Loaded from mods.js as a helper (before the mods that use it), not as a
+ * standalone mod: it only exposes an API and hooks nothing on its own.
  *
  * No gameplay automation beyond arrow-key map-edge navigation (identical to
  * what the reference client's Mover provides). Uses only game-client globals already on
@@ -483,7 +486,7 @@
       var cell = getClosestCellToChangeMapRandomised(cells, direction);
 
       if (cell == null) {
-        console.warn('[dtd/mover] No Cell Found.');
+        console.warn('[dtd/map-mover] No Cell Found.');
         return;
       }
 
@@ -508,9 +511,9 @@
   // ---------------------------------------------------------------------------
   // Expose global API
   // ---------------------------------------------------------------------------
-  window.__dtdMover = {
+  window.__dtdMapMover = {
     move: move
   };
 
-  console.log('[dtd] mover active');
+  console.log('[dtd] helper map-mover active');
 })();

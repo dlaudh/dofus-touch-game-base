@@ -8,34 +8,10 @@
 (function () {
   "use strict";
 
-  // Poll until the client globals we need are ready, then initialise.
-  var POLL_INTERVAL = 300;
-  var MAX_ATTEMPTS = 300; // ~90 s
-  var attempts = 0;
-
-  function isReady() {
-    return (
-      window.gui &&
-      window.isoEngine &&
-      window.dofus &&
-      window.foreground
-    );
-  }
-
-  function poll() {
-    if (isReady()) {
-      init();
-    } else {
-      attempts++;
-      if (attempts < MAX_ATTEMPTS) {
-        setTimeout(poll, POLL_INTERVAL);
-      } else {
-        console.warn("[dtd] health-bar: timed out waiting for client globals");
-      }
-    }
-  }
-
-  poll();
+  window.__dtdMod.ready(
+    { mod: "health-bar", need: ["gui", "isoEngine", "dofus", "foreground"] },
+    init
+  );
 
   // ---------------------------------------------------------------------------
   // Bar — one health-bar + text node for a single fighter
@@ -114,23 +90,45 @@
       return b.effect && b.effect.effectId === 150;
     });
 
-    var cellId = fighter.data.disposition && fighter.data.disposition.cellId;
+    // Fade a hidden enemy's bar, and clear the fade again once the buff lapses.
+    var faded = invisible && !window.gui.fightManager.isFighterOnUsersTeam(fighter.id);
+    var opacity = faded ? "0.5" : "";
+    this.lifeBarContainer.style.opacity = opacity;
+    this.lifePointsText.style.opacity = opacity;
 
-    if (cellId && (!invisible || window.gui.fightManager.isFighterOnUsersTeam(fighter.id))) {
-      try {
-        var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(cellId);
-        var pos = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
-        var halfW = this.lifeBarContainer.offsetWidth / 2;
-        this.lifeBarContainer.style.left = (pos.x - halfW) + "px";
-        this.lifeBarContainer.style.top = pos.y + "px";
-        this.lifePointsText.style.left = (pos.x - halfW) + "px";
-        this.lifePointsText.style.top = pos.y + "px";
-      } catch (e) {
-        console.error("[dtd] health-bar: position error for cellId", cellId, e);
-      }
-    } else if (invisible) {
-      this.lifeBarContainer.style.opacity = "0.5";
-      this.lifePointsText.style.opacity = "0.5";
+    if (!faded) this.updatePosition(fighter);
+  };
+
+  /**
+   * Pin the bar over the fighter's cell using the current camera.
+   *
+   * `immediate` suppresses the CSS top/left transition. That transition exists
+   * so the bar glides when a fighter walks to another cell; when the *camera*
+   * moves the bar has to keep up frame for frame, and a 300ms ease just smears
+   * it across the screen for the length of the zoom.
+   */
+  Bar.prototype.updatePosition = function (fighter, immediate) {
+    if (!this.lifeBarContainer || !this.lifePointsText) return;
+    try {
+      fighter = fighter || window.gui.fightManager.getFighter(this.fighter.id);
+    } catch (e) {
+      return;
+    }
+    var cellId = fighter && fighter.data && fighter.data.disposition && fighter.data.disposition.cellId;
+    if (!cellId) return;
+    try {
+      var scenePos = window.isoEngine.mapRenderer.getCellSceneCoordinate(cellId);
+      var pos = window.isoEngine.mapScene.convertSceneToCanvasCoordinate(scenePos.x, scenePos.y);
+      var halfW = this.lifeBarContainer.offsetWidth / 2;
+      var duration = immediate ? "0s" : "";
+      this.lifeBarContainer.style.transitionDuration = duration;
+      this.lifePointsText.style.transitionDuration = duration;
+      this.lifeBarContainer.style.left = (pos.x - halfW) + "px";
+      this.lifeBarContainer.style.top = pos.y + "px";
+      this.lifePointsText.style.left = (pos.x - halfW) + "px";
+      this.lifePointsText.style.top = pos.y + "px";
+    } catch (e) {
+      console.error("[dtd] health-bar: position error for cellId", cellId, e);
     }
   };
 
@@ -249,6 +247,17 @@
         self._destroyHealthBar(e.targetId);
       }
     });
+
+    // Reposition (without recomputing HP) whenever the camera moves.
+    if (window.__dtdCameraWatch) {
+      this._unsubscribeCamera = window.__dtdCameraWatch.subscribe(function () {
+        Object.keys(self.bars).forEach(function (id) {
+          try {
+            self.bars[id].updatePosition(null, true);
+          } catch (e) { /* noop */ }
+        });
+      });
+    }
 
     // Tear everything down when the fight ends
     var destroy = function () { self._destroyHealthBars(); };

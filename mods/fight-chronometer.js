@@ -13,16 +13,10 @@
 (function () {
   "use strict";
 
-  // -------------------------------------------------------------------------
-  // Boot: poll until the client globals are ready, then initialise.
-  // -------------------------------------------------------------------------
-  var POLL_MS = 200;
-  var pollTimer = setInterval(function () {
-    if (window.gui && window.isoEngine && window.dofus) {
-      clearInterval(pollTimer);
-      init();
-    }
-  }, POLL_MS);
+  window.__dtdMod.ready(
+    { mod: "fight-chronometer", need: ["gui", "isoEngine", "dofus"] },
+    init
+  );
 
   // -------------------------------------------------------------------------
   // State
@@ -53,13 +47,19 @@
   // -------------------------------------------------------------------------
   function create() {
     try {
-      if (chronometerInitialized) {
+      // The client tears down the fight UI between fights, which detaches the
+      // node we cached. Trusting the flag alone meant the chronometer never
+      // came back for the second fight of a session.
+      if (chronometerInitialized && chronometerContainer && window.document.contains(chronometerContainer)) {
         return;
       }
+      chronometerInitialized = false;
+      chronometerContainer = null;
 
-      // Re-check whether a previous page load already added the element.
-      if (window.document.querySelector("#chronometerContainer") !== null) {
-        chronometerContainer = window.document.querySelector("#chronometerContainer");
+      // Re-check whether something already added the element.
+      var existing = window.document.querySelector("#chronometerContainer");
+      if (existing !== null) {
+        chronometerContainer = existing;
         chronometerInitialized = true;
         return;
       }
