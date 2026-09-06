@@ -1,0 +1,34 @@
+Dofus Touch game-base
+Copyright (C) 2026 Victor Rosano
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License version 3, as published by the
+Free Software Foundation. See LICENSE for the full text.
+
+
+Third-party code
+----------------
+
+Parts of this repository are derived from Lindo
+(https://github.com/zenoxs/lindo and https://github.com/zenoxs/lindo-game-base),
+Copyright (C) the Lindo authors, licensed under the GNU General Public License
+version 3. That license is why this repository is GPL-3.0 as well.
+
+Ported or adapted from Lindo:
+
+  mods/challenge-percent.js      mods/party-info.js
+  mods/chat-history.js           mods/rapid-exchange.js
+  mods/damage-estimator.js       mods/rune-lister.js
+  mods/fight-chronometer.js      mods/show-pods.js
+  mods/grip-position-save.js     mods/show-resources.js
+  mods/harvest-bar.js            mods/zaap-search-filter.js
+  mods/health-bar.js             mods/helpers/map-mover.js
+  mods/job-xp.js                 mods/shortcuts.js
+  mods/keyboard-input-pad.js
+
+  fixes.css        layout rules for the desktop window shape
+  patches.json     client-bundle regex transforms, mirroring Lindo's regex.json
+
+The ports are rewrites into plain JavaScript against this project's own mod API
+rather than verbatim copies, and internal identifiers were renamed, but they are
+derivative works of Lindo and are covered by its license.
