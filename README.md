@@ -70,5 +70,12 @@ fetched inside a remote config request — see `index.html`).
 **v3.2.13**) and must be re-derived when Ankama ships a new build. Patterns that
 don't match are skipped with a warning (`[dtd] patches: N applied, M skipped`),
 so a bumped client version that logs skips is the signal to update the affected
-regexes. The seed transforms mirror a known-good upstream `regex.json` where
-possible.
+regexes. The seed transforms mirror Lindo's `regex.json` where possible.
+
+## License
+
+GPL-3.0. The mods, `fixes.css` and `patches.json` are ported from
+[Lindo](https://github.com/zenoxs/lindo) and
+[lindo-game-base](https://github.com/zenoxs/lindo-game-base), which are GPL-3.0;
+see [NOTICE](NOTICE) for the file-by-file list and [LICENSE](LICENSE) for the
+full text.
