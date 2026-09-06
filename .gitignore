@@ -1,8 +1,5 @@
-/graphify-out
 .DS_Store
 
 # Optional local-only mod entry point (see mods.js). Never committed:
 # it loads mods kept outside this repo.
 mods.local.js
-
-/tools
