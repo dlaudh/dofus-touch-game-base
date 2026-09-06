@@ -16,10 +16,14 @@ client **locally**.
    the patched client bundle from `./build/script.js`.
 3. `build/script.js` is **downloaded** into `<userData>/game-base/build/` (the
    raw bundle is cached as `script.raw.js`) and **regex-patched** using
-   `patches.json` before it runs. The bundle is re-downloaded only when the
-   client version changes
-   (read from `config.json`'s `assetsUrl`; tracked in `build/version.txt`);
-   otherwise the cache is reused and patches are re-applied each launch.
+   `patches.json` before it runs. Every launch asks the CDN whether the bundle
+   changed — a conditional GET against the ETag kept in `build/etag.txt` — and
+   downloads it only on a 200; a 304 reuses the cache. Patches are re-applied
+   each launch either way. The signal is the bundle's own ETag because the one
+   used before (the version segment of `config.json`'s `assetsUrl`) reads
+   3.2.13 across builds that differ: Ankama shipped buildVersion 1.73.12 over
+   1.73.10 without moving it, and the login server refused the stale client
+   with INCOMPATIBLE_BUILD_VERSION.
 4. **Login** — the client's OAuth flow opens in a dedicated Electron auth
    window; the `dofustouch://authorized?code=...` redirect is captured
    (`src/main/windows.ts`) and handed back to the client's own deeplink handler
@@ -27,7 +31,8 @@ client **locally**.
 
 ## Files
 
-- `index.html` — bootstrap (fake Cordova env, macOS rAF note, config fetch, loader)
+- `index.html` — bootstrap (fake Cordova env, macOS rAF note, config fetch, loader).
+  The config endpoint is overridable with `configUrl` in `settings.json`
 - `fixes.js` / `fixes.css` — runtime + style fixes applied after the client loads
   (mouse→touch, window-shape layout, black-bar/zoom fixes, popup sizing)
 - `patches.json` — regex transforms applied to the downloaded client bundle

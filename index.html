@@ -125,10 +125,17 @@
       // Electron/Chromium's native rAF is vsync-locked to the monitor's refresh
       // rate — so the game renders at the display's framerate (60/120/144Hz).
 
-      // Ankama's remote config. CORS-open (access-control-allow-origin: *).
-      // Provisional host — mirrors config.dataUrl; overridable later.
-      var CONFIG_URL =
-        "https://dt-proxy-production-login.ankama-games.com/config.json";
+      // Where the client's config.json comes from. Ankama's host unless
+      // settings.json names another with `configUrl`.
+      //
+      // The override has to be resolved here rather than in a mod: this fetch
+      // fires while the document is still parsing, before mods.js has loaded,
+      // so nothing loaded later can intercept it.
+      var CONFIG_HOST =
+        (window.__dtd && window.__dtd.settings && window.__dtd.settings.configUrl) || "";
+      var CONFIG_URL = CONFIG_HOST
+        ? CONFIG_HOST.replace(/\/+$/, "") + "/config.json"
+        : "https://dt-proxy-production-login.ankama-games.com/config.json";
 
       // Loads the patched client bundle, then our runtime fixes, then cb().
       window.initDofus = function (cb) {
