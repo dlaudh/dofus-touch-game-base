@@ -3,39 +3,6 @@
 (function () {
   "use strict";
 
-  // --- FPS counter overlay -------------------------------------------------
-  // Measures the browser's paint rate (requestAnimationFrame), which is
-  // vsync-locked to the monitor — so it reads the real on-screen framerate.
-  // Toggle via window.__dtdSettings.showFps.
-  if (!window.__dtdSettings || window.__dtdSettings.showFps !== false) {
-    (function fpsCounter() {
-      var clock = window.performance || Date;
-      var el = null,
-        frames = 0,
-        last = clock.now();
-      function tick() {
-        frames++;
-        var now = clock.now();
-        if (now - last >= 500) {
-          var fps = Math.round((frames * 1000) / (now - last));
-          frames = 0;
-          last = now;
-          if (!el && document.body) {
-            el = document.createElement("div");
-            el.id = "dtd-fps";
-            el.style.cssText =
-              "position:fixed;top:4px;left:4px;z-index:2147483647;background:rgba(0,0,0,.6);" +
-              "color:#0f0;font:12px/1.4 monospace;padding:2px 6px;border-radius:3px;pointer-events:none";
-            document.body.appendChild(el);
-          }
-          if (el) el.textContent = "FPS: " + fps;
-        }
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    })();
-  }
-
   // --- Mouse -> touch translation ------------------------------------------
   // The Dofus Touch client is a TOUCH client: it binds touchstart/touchend/
   // touchmove and ignores mouse events. On desktop there are no touch events,

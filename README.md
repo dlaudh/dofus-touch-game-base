@@ -35,9 +35,29 @@ client **locally**.
   `mods/shortcuts.js` (desktop keyboard shortcuts + mouse-wheel zoom, inert on
   touch-only hosts)
 - `mods/helpers/*.js` — shared code the mods depend on, loaded before them:
+  `mod-api.js` (`window.__dtdMod`: readiness, the mod registry, enable/disable),
   `camera-watch.js` (tells map-anchored overlays when the camera moves) and
   `map-mover.js` (A* pathfinder + map-edge navigation)
 - `keymaster.js` — keyboard-dep stub
+
+## Loading mods that are not in this repo
+
+`mods.js` will load an optional `mods.local.js` from the game-base root — a
+gitignored file that is never committed here. Use it for mods kept outside this
+repository (development tooling, anything not meant to ship publicly):
+
+```js
+// mods.local.js
+window.__dtdMods.load("my-mod");               // a file in mods/
+window.__dtdMods.loadPath("local/my-mod.js");  // a file anywhere
+window.__dtdMod.disable("show-resources");     // switch a stock mod off
+```
+
+It is requested **only** when the host sets `"localMods": true` in
+`<userData>/settings.json`, so a normal build never asks for a file that is not
+there. It runs after the helpers and before the stock mods; scripts it loads are
+appended after them, which is still well before the client bundle (that is
+fetched inside a remote config request — see `index.html`).
 
 ## Patches are version-fragile
 
