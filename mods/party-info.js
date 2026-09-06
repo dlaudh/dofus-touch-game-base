@@ -15,6 +15,31 @@
 (function () {
   "use strict";
 
+  /**
+   * The party component, or null.
+   *
+   * window.gui.party does not exist for the whole session — reading through it
+   * unguarded is what killed this mod at startup: initPartyMemberOnMap ends by
+   * calling updatePartyMembers, that threw, and ready() left the mod registered
+   * but never running, taking the level/prospecting counter down with it.
+   *
+   * Startup must not depend on being in a group: the mod registers its
+   * listeners and stays idle until a party actually exists.
+   */
+  function currentParty() {
+    try {
+      return (window.gui && window.gui.party && window.gui.party.currentParty) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function partyMembers() {
+    var party = currentParty();
+    var list = party && party._childrenList;
+    return list && list.length > 0 ? list : null;
+  }
+
   window.__dtdMod.ready(
     { mod: "party-info", need: ["gui", "isoEngine", "dofus"] },
     function () {
@@ -42,6 +67,7 @@
       var partyBoxes = document.querySelector(".partyBoxes");
       if (!partyBoxes) return;
       var parent = partyBoxes.parentElement;
+      if (!parent) return;
 
       container = document.createElement("div");
       container.id = "party-info-container";
@@ -109,9 +135,9 @@
       try {
         var partyLevel = 0;
         var prospecting = 0;
-        var currentParty = window.gui.party.currentParty;
-        if (currentParty && currentParty._childrenList.length > 0) {
-          currentParty._childrenList.forEach(function (c) {
+        var members = partyMembers();
+        if (members) {
+          members.forEach(function (c) {
             partyLevel += c.memberData.level;
             prospecting += c.memberData.prospecting;
           });
@@ -208,9 +234,8 @@
      * occupied the first slot.
      */
     function memberElement(memberId) {
-      var currentParty = window.gui.party.currentParty;
-      if (!currentParty) return null;
-      var children = currentParty._childrenList;
+      var children = partyMembers();
+      if (!children) return null;
       for (var i = 0; i < children.length; i++) {
         var child = children[i];
         if (child.memberData && child.memberData.id === memberId) {
@@ -235,10 +260,10 @@
       var oldMembers = new Map(members);
       members.clear();
 
-      var currentParty = window.gui.party.currentParty;
-      if (currentParty && currentParty._childrenList.length > 0) {
+      var list = partyMembers();
+      if (list) {
         var mapId = window.isoEngine.mapRenderer.mapId;
-        currentParty._childrenList.forEach(function (m) {
+        list.forEach(function (m) {
           var isOnMap = mapId === m.memberData.mapId;
           if (oldMembers.has(m.memberData.id)) {
             isOnMap = !!oldMembers.get(m.memberData.id);
@@ -251,8 +276,7 @@
 
     // actor joined or left map
     function updateMember(data, isOnMap) {
-      var currentParty = window.gui.party.currentParty;
-      if (currentParty && currentParty._childrenList.length > 0) {
+      if (partyMembers()) {
         var playerId = isOnMap ? data.informations.contextualId : data.id;
         if (members.has(playerId)) {
           members.set(playerId, isOnMap);
@@ -263,8 +287,7 @@
 
     // player changed map
     function updateMemberOnMapChange(data) {
-      var currentParty = window.gui.party.currentParty;
-      if (currentParty && currentParty._childrenList.length > 0) {
+      if (partyMembers()) {
         var actorsId = [];
         data.actors.forEach(function (actor) {
           if (actor.contextualId > 0) actorsId.push(actor.contextualId);
