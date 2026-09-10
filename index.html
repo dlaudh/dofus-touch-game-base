@@ -42,13 +42,44 @@
         antialias: true,
       };
 
-      // The client feature-detects IndexedDB; stub it out (desktop WebView
-      // storage is handled by the isolated data store instead).
-      window.indexedDB = {};
+      // Chromium defines window.indexedDB as a read-only accessor, so the
+      // assignment that used to sit here replaced nothing: the client has
+      // always run on the real IndexedDB. These four are ordinary writable
+      // globals, and the bundle only reads IDBTransaction.READ_ONLY /
+      // READ_WRITE off them, so they stay stubbed.
       window.IDBDatabase = {};
       window.IDBTransaction = {};
       window.IDBCursor = {};
       window.IDBKeyRange = {};
+
+      // The client's disk cache kills the whole app when its IndexedDB open()
+      // fails: "Error IDB01" (ui.fatal.idb). The usual cause is a store left
+      // half-written by a hard kill. Catch the failing request and let the
+      // host empty this window's store and reload. The host repairs once per
+      // window; after that this reports and the client shows its own error,
+      // which is the behaviour there was before.
+      (function () {
+        var idb = window.indexedDB;
+        if (!idb || typeof idb.open !== "function") return;
+        var open = idb.open.bind(idb);
+        var reported = false;
+        function report(why) {
+          if (reported) return;
+          reported = true;
+          console.error("[dtd] IndexedDB " + why);
+          if (window.__dtd && window.__dtd.idbFailed) window.__dtd.idbFailed(why);
+        }
+        idb.open = function () {
+          var req = open.apply(null, arguments);
+          req.addEventListener("error", function () {
+            report("open error: " + ((req.error && req.error.message) || "unknown"));
+          });
+          // No onblocked handler in the client: an open held up by another
+          // connection hangs the boot instead of failing it.
+          req.addEventListener("blocked", function () { report("open blocked"); });
+          return req;
+        };
+      })();
 
       // Minimal Cordova shim so the Cordova-built client doesn't throw.
       window.cordova = {
