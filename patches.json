@@ -38,9 +38,9 @@
     },
     {
       "file": "build/script.js",
-      "find": "this\\.ipadRatio=q\\.bottomMenuBar",
-      "replace": "q.bottomMenuBar=window.innerWidth/window.innerHeight<=1.5,this.ipadRatio=q.bottomMenuBar",
-      "note": "Switch the menu dock (bottom=portrait vs right=landscape) by window shape on every relayout. The client derives the dock from the persisted `bottomMenuBar` game-option, defaulted ONCE at init from the boot aspect ratio (screenWidth/screenHeight<=IPAD_SCREEN_RATIO=1.5) and never recomputed on resize, so maximizing a portrait-shaped window never flips the dock. _resizeUi (which we drive on resize/maximize) reads q.bottomMenuBar right here; recompute it from the current window aspect first. Direct field-set (not changeValue) on purpose: avoids re-emitting bottomMenuBar (whose only listener is _resizeUi itself) and avoids persisting a shape-derived value over the user's saved pref. IPAD_SCREEN_RATIO=1.5: ratio<=1.5 -> bottom (portrait) dock, ratio>1.5 -> right (landscape) dock."
+      "find": "this\\.ipadRatio=([A-Za-z_$]{1,3})\\.bottomMenuBar",
+      "replace": "$1.bottomMenuBar=window.innerWidth/window.innerHeight<=1.5,this.ipadRatio=$1.bottomMenuBar",
+      "note": "Switch the menu dock (bottom=portrait vs right=landscape) by window shape on every relayout. The client derives the dock from the persisted `bottomMenuBar` game-option, defaulted ONCE at init from the boot aspect ratio (screenWidth/screenHeight<=IPAD_SCREEN_RATIO=1.5) and never recomputed on resize, so maximizing a portrait-shaped window never flips the dock. _resizeUi (which we drive on resize/maximize) reads bottomMenuBar right here; recompute it from the current window aspect first. Direct field-set (not changeValue) on purpose: avoids re-emitting bottomMenuBar (whose only listener is _resizeUi itself) and avoids persisting a shape-derived value over the user's saved pref. IPAD_SCREEN_RATIO=1.5: ratio<=1.5 -> bottom (portrait) dock, ratio>1.5 -> right (landscape) dock. The options object is captured by backreference rather than spelled out: it was `q` in 3.2.13 and is `B` in 1.74.2, and pinning the minified name is what silently dropped this patch — the dock stayed stuck on the bottom at every window size."
     },
     {
       "file": "build/script.js",
