@@ -246,6 +246,42 @@
   }
 
   /**
+   * The client's windows manager: the module every window open, close and focus
+   * goes through. It is not on window, so it is found by shape in the webpack
+   * module cache that window.singletons exposes (see patches.json) — by shape
+   * and not by module id, because those ids are handed out at bundle time and
+   * move between Ankama builds.
+   *
+   * Cached on the first hit. Null before the module has been required, and on a
+   * client that never got the singletons patch.
+   */
+  var windowsManagerModule = null;
+  var windowsManagerMissLogged = false;
+  function windowsManager() {
+    if (windowsManagerModule) return windowsManagerModule;
+    var cache = window.singletons && window.singletons.c;
+    if (cache) {
+      for (var id in cache) {
+        var exports = cache[id] && cache[id].exports;
+        if (
+          exports &&
+          typeof exports.open === "function" &&
+          typeof exports.close === "function" &&
+          typeof exports.getLastFocusedWindowId === "function"
+        ) {
+          windowsManagerModule = exports;
+          return exports;
+        }
+      }
+    }
+    if (!windowsManagerMissLogged) {
+      windowsManagerMissLogged = true;
+      console.warn("[dtd] mod-api: no windows manager in window.singletons");
+    }
+    return null;
+  }
+
+  /**
    * Whether this host has desktop input — a hardware keyboard and a mouse wheel.
    * Mods that bind either (shortcuts) or that would summon a soft keyboard
    * (zaap-search-filter's autofocus) gate on this instead of each rolling its
@@ -328,6 +364,7 @@
     },
 
     findWindow: findWindow,
+    windowsManager: windowsManager,
     isDesktopInput: isDesktopInput
   };
 

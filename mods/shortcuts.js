@@ -136,6 +136,49 @@
   }
 
   // --- Keyboard shortcuts ---------------------------------------------------
+
+  /**
+   * Close the top-most open window. Returns whether one was closed.
+   *
+   * windowsContainer keeps its children in stacking order, so the last child is
+   * the window on top: focusing one calls windowsContainer.appendChild(win), and
+   * WuiDom's appendChild moves a child it already owns to the end of the list
+   * (and of the DOM) rather than adding it twice.
+   *
+   * openState, not isVisible(): closing a window plays a 150ms fade, and for
+   * those 150ms it is already closed but still visible. Reading isVisible()
+   * spends the keystroke re-closing it; reading openState walks past it to the
+   * window underneath, which is the one the player means.
+   */
+  function closeTopWindow(g) {
+    var list = g.windowsContainer && g.windowsContainer._childrenList;
+    if (!list) return false;
+    for (var i = list.length - 1; i >= 0; i--) {
+      var win = list[i];
+      if (!win || win.id === "recaptcha") continue;
+      var isOpen =
+        typeof win.openState === "boolean" ? win.openState : !!(win.isVisible && win.isVisible());
+      if (!isOpen) continue;
+      win.close();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Nothing left to dismiss, so Escape opens the main menu — "global" is the
+   * client's own id for it (globalWindow, titled ui.common.mainMenu): options,
+   * change character, disconnect, return to game. Returns false on a client
+   * whose windows manager we cannot reach, which leaves Escape doing what it
+   * did before: nothing.
+   */
+  function openMainMenu() {
+    var manager = window.__dtdMod.windowsManager();
+    if (!manager) return false;
+    manager.open("global");
+    return true;
+  }
+
   function isTyping(e) {
     var t = e.target;
     return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
@@ -143,23 +186,28 @@
 
   function setupKeys() {
     var onKeyDown = function (e) {
-        if (isTyping(e) || !window.gui || !window.isoEngine) return;
+        if (!window.gui || !window.isoEngine) return;
         var g = window.gui;
         var k = (e.key || "").toLowerCase();
+        // Escape is the one shortcut that has to survive isTyping. Opening the
+        // chat focuses its input and keeps it focused for as long as the chat
+        // is open, so standing down for any focused field made the chat branch
+        // below unreachable in exactly the case it exists for. Every other
+        // shortcut still stands down, or typing "i" into the chat would open
+        // the bag instead of a letter.
+        if (isTyping(e) && k !== "escape") return;
         try {
-          // Escape: close the active chat, else the top-most open window.
+          // Escape: unwind the interface from the top down. The active chat
+          // first, then the open windows from the top of the stack to the
+          // bottom, and once there is nothing left to dismiss, the game's main
+          // menu.
           if (k === "escape") {
             if (g.chat && g.chat.active) {
               g.chat.deactivate();
+              e.preventDefault();
               return;
             }
-            var list = g.windowsContainer._childrenList;
-            for (var i = list.length - 1; i >= 0; i--) {
-              if (list[i].isVisible() && list[i].id !== "recaptcha") {
-                list[i].close();
-                return;
-              }
-            }
+            if (closeTopWindow(g) || openMainMenu()) e.preventDefault();
             return;
           }
 
