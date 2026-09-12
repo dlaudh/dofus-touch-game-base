@@ -103,7 +103,22 @@
         };
       })();
 
-      // Minimal Cordova shim so the Cordova-built client doesn't throw.
+      // Minimal Cordova environment for the Cordova-built client, and only
+      // when a host is present — because defining it is also a claim about how
+      // this page is able to log in. The client picks its login flow from what
+      // it finds here, and window.cordova sends it down the Cordova one: the
+      // login URL goes to a browser tab the host opens, and the redirect comes
+      // back on a custom scheme that only a host can intercept.
+      //
+      // Served by a plain HTTP server there is no host to do either, and the
+      // client's own browser flow — navigate to the login page, come back to
+      // this URL with ?code= — is the one that works. Leaving cordova
+      // undefined is what selects it.
+      //
+      // The rest of the client copes with the absence: audio, screen
+      // orientation and the WebView selector each test for their plugin before
+      // touching it, and isCordova is only ever read as a boolean.
+      if (window.__dtd) {
       window.cordova = {
         plugins: {
           isemulator: { assess: function (fct) { fct(false); } },
@@ -147,6 +162,7 @@
         route: function () {},
         routeWithNavController: function () {},
       };
+      }
 
       // Called by Rust (via eval) when the auth window captures the redirect.
       // The client's deeplink callback reads e.host, e.path, e.queryString and
@@ -214,6 +230,18 @@
       fetch(CONFIG_URL)
         .then(function (r) { return r.json(); })
         .then(function (cfg) {
+          // The client decides this inside its own config loader, which is
+          // skipped by assigning window.Config here. It is what makes the art
+          // be requested with crossOrigin="anonymous", and without it an
+          // assets host on another origin taints the WebGL canvas: every
+          // texture upload fails with a SecurityError and the map never draws.
+          // Same rule the client applies — anonymous unless the URL carries
+          // credentials of its own.
+          if (cfg && cfg.imgCrossOrigin === undefined) {
+            cfg.imgCrossOrigin = /^https?:\/\/.+?:.+?@.+?/.test(cfg.assetsUrl || "")
+              ? undefined
+              : "anonymous";
+          }
           window.Config = cfg;
           window.initDofus(function () {});
         })
