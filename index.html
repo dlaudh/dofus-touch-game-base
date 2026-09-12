@@ -13,6 +13,21 @@
       mobile client expects, pulls Ankama's config.json, then loads the
       patched client bundle from ./build/script.js. See game-base/README.md.
     -->
+    <!--
+      Optional, and only useful when this directory is served by something
+      other than the wrapper: a plain HTTP server has no main process, so
+      nothing injects window.__dtd and every setting below falls back to its
+      default. Drop a settings.js beside this file to supply them:
+
+        window.__dtdSettings = { configUrl: "http://host:port", localMods: true };
+
+      It has to be a blocking script rather than a fetch. The bootstrap at the
+      bottom of this head requests config.json while the document is still
+      parsing, so anything it reads must already exist by then. A missing
+      settings.js is a 404 in the console and nothing else; under the wrapper
+      the file is absent and window.__dtd.settings wins regardless.
+    -->
+    <script src="settings.js"></script>
     <script>
       // --- Environment the mobile client expects -----------------------------
       // (Running under Electron with webSecurity:false, so cross-origin/CORS is
@@ -34,13 +49,20 @@
       };
 
       // Render settings (fps/pixelRatio/antialias) read by the patched client
-      // bundle (see patches.json). Comes from the main process (fps defaults to
-      // the monitor's refresh rate); overridable via <userData>/settings.json.
-      window.__dtdSettings = (window.__dtd && window.__dtd.settings) || {
-        fps: 60,
-        pixelRatio: 2,
-        antialias: true,
-      };
+      // bundle (see patches.json), and the wrapper's own keys. Under the
+      // wrapper these come from the main process, which resolves fps against
+      // the monitor's refresh rate and reads <userData>/settings.json. Served
+      // any other way there is no main process, so a settings.js loaded above
+      // gets its turn before the defaults.
+      //
+      // This is the one object the rest of the page and the mods read, so a
+      // setting means the same thing whichever host supplied it.
+      window.__dtdSettings = (window.__dtd && window.__dtd.settings) ||
+        window.__dtdSettings || {
+          fps: 60,
+          pixelRatio: 2,
+          antialias: true,
+        };
 
       // Chromium defines window.indexedDB as a read-only accessor, so the
       // assignment that used to sit here replaced nothing: the client has
@@ -156,14 +178,13 @@
       // Electron/Chromium's native rAF is vsync-locked to the monitor's refresh
       // rate — so the game renders at the display's framerate (60/120/144Hz).
 
-      // Where the client's config.json comes from. Ankama's host unless
-      // settings.json names another with `configUrl`.
+      // Where the client's config.json comes from. Ankama's host unless a
+      // `configUrl` says otherwise.
       //
       // The override has to be resolved here rather than in a mod: this fetch
       // fires while the document is still parsing, before mods.js has loaded,
       // so nothing loaded later can intercept it.
-      var CONFIG_HOST =
-        (window.__dtd && window.__dtd.settings && window.__dtd.settings.configUrl) || "";
+      var CONFIG_HOST = window.__dtdSettings.configUrl || "";
       var CONFIG_URL = CONFIG_HOST
         ? CONFIG_HOST.replace(/\/+$/, "") + "/config.json"
         : "https://dt-proxy-production-login.ankama-games.com/config.json";
