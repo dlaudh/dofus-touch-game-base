@@ -189,6 +189,12 @@
         if (!window.gui || !window.isoEngine) return;
         var g = window.gui;
         var k = (e.key || "").toLowerCase();
+        // Ctrl/Cmd/Alt combinations are the OS's and the host's, never ours.
+        // Without this, Ctrl+C over the chat log hit the "c" binding below:
+        // it opened the characteristics window and preventDefault'ed the copy,
+        // so copy/paste looked broken. Shift is deliberately not here — it is
+        // the modifier the item-slot binding uses.
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
         // Escape is the one shortcut that has to survive isTyping. Opening the
         // chat focuses its input and keeps it focused for as long as the chat
         // is open, so standing down for any focused field made the chat branch
