@@ -179,6 +179,63 @@
     return true;
   }
 
+  /**
+   * The shortcut bar in play, or null.
+   *
+   * There is no longer one: the client keeps a manager holding a playerBar and
+   * a heroBar, and which of them is on screen follows who is being controlled.
+   * gui.shortcutBar, the single bar this used to read, is simply absent — and
+   * because the whole key handler sits in a try/catch, reading it threw and was
+   * swallowed, so every digit shortcut went dead without a word. Hence the one
+   * warning below: the next time this moves, it says so.
+   *
+   * gui.shortcutBar is still tried first, for a client that still has one.
+   */
+  var barMissLogged = false;
+  function shortcutBar(g) {
+    if (g.shortcutBar) return g.shortcutBar;
+    var bars = g.shortcutBarManager && g.shortcutBarManager.shortcutBars;
+    if (bars) {
+      var characters = g.playerData && g.playerData.characters;
+      var hero =
+        characters &&
+        typeof characters.isHeroCharacterControlled === "function" &&
+        characters.isHeroCharacterControlled();
+      var bar = (hero && bars.heroBar) || bars.playerBar;
+      if (bar) return bar;
+    }
+    if (!barMissLogged) {
+      barMissLogged = true;
+      console.warn("[dtd] shortcuts: no shortcut bar on window.gui — digit shortcuts are off");
+    }
+    return null;
+  }
+
+  /**
+   * Run a shortcut-bar slot, the way the two panels actually run one.
+   *
+   * A spell slot acts on a tap. An item slot does not: the client binds its
+   * work to a double tap (slot.on("doubletap", this._doubleTapHandler)), and
+   * that handler is what uses the item, plays the emote, sends the smiley or
+   * applies the preset — the bar holds all four, not only items. Tapping one
+   * once selects it and nothing else, which is why Shift+digit looked dead on
+   * an emote sitting in the bar.
+   *
+   * Emitted rather than called directly so every listener a real double tap
+   * would reach still hears it.
+   */
+  function useSlot(slot, panel) {
+    if (!slot) return false;
+    if (panel === "item") {
+      if (typeof slot.emit !== "function") return false;
+      slot.emit("doubletap");
+      return true;
+    }
+    if (typeof slot.tap !== "function") return false;
+    slot.tap();
+    return true;
+  }
+
   function isTyping(e) {
     var t = e.target;
     return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
@@ -244,11 +301,10 @@
           if (m && !(g.numberInputPad && g.numberInputPad.isVisible())) {
             var idx = parseInt(m[1], 10) - 1;
             var panel = e.shiftKey ? "item" : "spell";
-            var slot = g.shortcutBar._panels[panel].slotList[idx];
-            if (slot && slot.tap) {
-              slot.tap();
-              e.preventDefault();
-            }
+            var bar = shortcutBar(g);
+            var panels = bar && bar._panels;
+            var slot = panels && panels[panel] && panels[panel].slotList[idx];
+            if (useSlot(slot, panel)) e.preventDefault();
             return;
           }
 
